@@ -52,7 +52,7 @@
 {"county_id":"47","county_name":"NAIROBI"}
 ]
 },
-,{"type":"table","name":"subcounties","database":"hci","data":
+{"type":"table","name":"subcounties","database":"hci","data":
 [
 {"subcounty_id":"1","county_id":"1","constituency_name":"changamwe"},
 {"subcounty_id":"2","county_id":"1","constituency_name":"jomvu"},

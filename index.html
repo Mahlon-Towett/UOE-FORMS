@@ -37,46 +37,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
-    <!-- Additional CSS for cascading dropdowns -->
+    <!-- Firestore operations (modular SDK) -->
+    <script type="module">
+        import { collection, addDoc, updateDoc, increment, doc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        
+        // Make Firestore functions available globally for our modules
+        window.firestoreFunctions = {
+            collection,
+            addDoc,
+            updateDoc,
+            increment,
+            doc,
+            getDoc,
+            serverTimestamp
+        };
+        
+        console.log('🔥 Firestore functions loaded');
+    </script>
+    
+    <!-- Location Dropdown Enhancement Styles -->
     <style>
         .location-field-group {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 8px;
+            margin-bottom: 15px;
         }
         
         .location-dropdown {
-            border: none;
-            border-bottom: 1px solid #000 !important;
-            padding: 2px 5px;
-            font-family: inherit;
-            font-size: 12px;
-            background: transparent !important;
-            min-width: 120px;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23000" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
-            background-repeat: no-repeat;
-            background-position: right 5px center;
-            background-size: 12px;
-            padding-right: 25px;
-        }
-        
-        .location-dropdown:disabled {
-            opacity: 0.6;
-            background-color: #f5f5f5 !important;
-            cursor: not-allowed;
-        }
-        
-        .location-dropdown:focus {
-            outline: none !important;
-            background-color: #f0f8ff !important;
-            border-bottom-color: #2a5298 !important;
+            width: 100% !important;
+            margin-top: 5px;
+            background-color: white;
+            position: relative;
         }
         
         .loading-dropdown {
-            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23666" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>') !important;
+            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="%23666" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>') !important;
             background-size: 16px !important;
             animation: spin 1s linear infinite;
         }
@@ -283,55 +276,48 @@
                 </div>
 
                 <div class="form-field" style="margin-left: 25px;">
-                    <div class="field-group location-field-group" style="max-width: 300px;">
+                    <div class="field-group location-field-group">
                         <span class="field-label">Ward</span>
                         <select class="location-dropdown" id="ward" disabled>
                             <option value="">Select constituency first</option>
                         </select>
-                        <span class="location-help-text">Optional: Will populate after constituency selection</span>
+                        <span class="location-help-text">Will populate after constituency selection</span>
                     </div>
-                </div>
-
-                <!-- Keep original division field for compatibility -->
-                <div class="form-field" style="margin-left: 25px;">
-                    <span class="field-label">Division (if known)</span>
-                    <input type="text" class="field-input" id="division" placeholder="Optional administrative division">
                 </div>
 
                 <div class="two-column">
                     <div class="form-field">
                         <span class="field-number">10.</span>
-                        <span class="field-label">Nearest Town</span>
-                        <input type="text" class="field-input" id="nearestTown">
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">Nearest Police Station</span>
-                        <input type="text" class="field-input" id="nearestPolice">
+                        <span class="field-label">Marital Status</span>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="maritalStatus" value="Single" id="single">
+                                <label for="single">Single</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="maritalStatus" value="Married" id="married">
+                                <label for="married">Married</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="maritalStatus" value="Divorced" id="divorced">
+                                <label for="divorced">Divorced</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="maritalStatus" value="Widowed" id="widowed">
+                                <label for="widowed">Widowed</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="form-field">
                     <span class="field-number">11.</span>
-                    <span class="field-label">Home Contact Address</span>
-                    <input type="text" class="field-input" id="homeAddress">
+                    <span class="field-label">Division</span>
+                    <input type="text" class="field-input" id="division">
                 </div>
 
-                <!-- Marital Status -->
                 <div class="form-field">
                     <span class="field-number">12.</span>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="maritalStatus" value="Married" id="married">
-                            <label for="married">Married</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" name="maritalStatus" value="Single" id="single">
-                            <label for="single">Single</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-field indented">
                     <span class="field-label">Name and Address of Spouse (if married)</span>
                     <input type="text" class="field-input" id="spouseDetails">
                 </div>
@@ -428,41 +414,42 @@
                 <!-- Siblings -->
                 <div class="form-field">
                     <span class="field-number">15.</span>
-                    <span class="field-label">Names of Brothers and Sisters</span>
+                    <span class="field-label">Brothers and Sisters (List all):</span>
                 </div>
+                
                 <div class="siblings-grid">
                     <div class="sibling-field">
                         <span class="sibling-number">1.</span>
-                        <input type="text" class="field-input" id="sibling1">
+                        <input type="text" class="field-input" id="sibling1" placeholder="Full Name">
                     </div>
                     <div class="sibling-field">
                         <span class="sibling-number">2.</span>
-                        <input type="text" class="field-input" id="sibling2">
+                        <input type="text" class="field-input" id="sibling2" placeholder="Full Name">
                     </div>
                     <div class="sibling-field">
                         <span class="sibling-number">3.</span>
-                        <input type="text" class="field-input" id="sibling3">
+                        <input type="text" class="field-input" id="sibling3" placeholder="Full Name">
                     </div>
                     <div class="sibling-field">
                         <span class="sibling-number">4.</span>
-                        <input type="text" class="field-input" id="sibling4">
+                        <input type="text" class="field-input" id="sibling4" placeholder="Full Name">
                     </div>
                     <div class="sibling-field">
                         <span class="sibling-number">5.</span>
-                        <input type="text" class="field-input" id="sibling5">
+                        <input type="text" class="field-input" id="sibling5" placeholder="Full Name">
                     </div>
                     <div class="sibling-field">
                         <span class="sibling-number">6.</span>
-                        <input type="text" class="field-input" id="sibling6">
+                        <input type="text" class="field-input" id="sibling6" placeholder="Full Name">
                     </div>
                 </div>
 
                 <!-- Emergency Contacts -->
                 <div class="form-field">
                     <span class="field-number">16.</span>
-                    <span class="field-label">Give names and address of two persons who can be contacted in case of an emergency.</span>
+                    <span class="field-label">Contact person(s) in case of emergency:</span>
                 </div>
-
+                
                 <div class="emergency-section">
                     <div class="form-field">
                         <span class="emergency-label">(e) Name</span>
@@ -575,8 +562,7 @@
                 <div class="certification">
                     I certify that the information I have provided is correct.
                 </div>
-
-                <!-- Signature Section -->
+                
                 <div class="signature-section">
                     <div class="signature-field">
                         <span>Signature</span>
@@ -642,10 +628,437 @@
         </div>
     </div>
 
-    <!-- Enhanced Script with Cascading Dropdowns -->
-    <script src="enhanced_script_with_locations.js?v=2.5"></script>
+    <!-- ========================================
+         MODULAR JAVASCRIPT LOADING SEQUENCE
+         ======================================== -->
     
-    <!-- Logo Error Handlers -->
+    <!-- JSON Loading Status Logging -->
+    <script>
+        console.log('🚀 Starting University of Eldoret Student Form Application');
+        console.log('📦 Loading modular JavaScript architecture...');
+        
+        // JSON Loading Status Tracker
+        window.UoEForm = window.UoEForm || {};
+        window.UoEForm.loadingStatus = {
+            locationJSON: {
+                attempted: false,
+                loaded: false,
+                error: null,
+                timestamp: null
+            },
+            modules: {
+                locationManager: false,
+                mainApp: false,
+                legacyScript: false
+            }
+        };
+        
+        // JSON Status Tracker with PHPMyAdmin Support
+        window.UoEForm.logJSONStatus = function(status, error = null) {
+            const timestamp = new Date().toISOString();
+            window.UoEForm.loadingStatus.locationJSON = {
+                attempted: true,
+                loaded: status === 'success',
+                error: error,
+                timestamp: timestamp
+            };
+            
+            if (status === 'success') {
+                console.log('✅ JSON Location Data loaded successfully at', timestamp);
+            } else if (status === 'error') {
+                console.error('❌ JSON Location Data failed to load at', timestamp, 'Error:', error);
+            } else if (status === 'fallback') {
+                console.warn('⚠️ Using fallback location data at', timestamp);
+            } else if (status === 'attempting') {
+                console.log('🔄 Attempting to load JSON Location Data at', timestamp);
+            }
+            
+            // Also log to console for easy debugging
+            console.log('📊 JSON Loading Status:', window.UoEForm.loadingStatus.locationJSON);
+        };
+        
+        // PHPMyAdmin JSON Format Handler
+        window.UoEForm.handlePHPMyAdminJSON = function(rawData) {
+            console.log('🔄 Processing PHPMyAdmin JSON format...');
+            
+            if (!Array.isArray(rawData)) {
+                console.log('📊 Standard JSON object format detected');
+                return rawData;
+            }
+            
+            console.log('📊 PHPMyAdmin array format detected, extracting tables...');
+            
+            // Find tables in PHPMyAdmin export format
+            const tables = rawData.filter(item => item.type === 'table' && item.data);
+            console.log('📊 Found tables:', tables.map(t => `${t.name} (${t.data.length} records)`));
+            
+            // Convert to expected format for location manager
+            const result = {
+                counties: [],
+                subcounties: [],
+                station: []
+            };
+            
+            tables.forEach(table => {
+                if (table.name === 'counties') {
+                    // Convert county data to expected format
+                    result.counties = table.data.map(county => ({
+                        county_id: county.county_id,
+                        county_name: county.county_name
+                    }));
+                } else if (table.name === 'subcounties') {
+                    result.subcounties = table.data;
+                } else if (table.name === 'station') {
+                    result.station = table.data;
+                }
+            });
+            
+            console.log('✅ PHPMyAdmin JSON converted to standard format');
+            console.log('📊 Converted data:');
+            console.log('  - Counties:', result.counties.length);
+            console.log('  - Subcounties:', result.subcounties.length);
+            console.log('  - Stations:', result.station.length);
+            
+            return result;
+        };
+        
+        // Module Loading Logger
+        window.UoEForm.logModuleStatus = function(moduleName, status) {
+            window.UoEForm.loadingStatus.modules[moduleName] = status;
+            const timestamp = new Date().toISOString();
+            
+            if (status) {
+                console.log(`✅ ${moduleName} module loaded successfully at`, timestamp);
+            } else {
+                console.error(`❌ ${moduleName} module failed to load at`, timestamp);
+            }
+            
+            console.log('📊 Module Loading Status:', window.UoEForm.loadingStatus.modules);
+        };
+        
+        // Global Status Check Function
+        window.UoEFormLoadingStatus = function() {
+            return window.UoEForm.loadingStatus;
+        };
+    </script>
+    
+    <!-- PHASE 1: Location Management Module -->
+    <script src="location-manager.js?v=2.5" onload="window.UoEForm.logModuleStatus('locationManager', true)" onerror="window.UoEForm.logModuleStatus('locationManager', false)"></script>
+    
+    <!-- PHASE 2: Form Validation Module (when extracted) -->
+    <!-- <script src="form-validator.js?v=2.5" onload="window.UoEForm.logModuleStatus('formValidator', true)" onerror="window.UoEForm.logModuleStatus('formValidator', false)"></script> -->
+    
+    <!-- PHASE 3: Form Utilities Module (when extracted) -->
+    <!-- <script src="form-utilities.js?v=2.5" onload="window.UoEForm.logModuleStatus('formUtilities', true)" onerror="window.UoEForm.logModuleStatus('formUtilities', false)"></script> -->
+    
+    <!-- PHASE 4: PDF Generation Module (when extracted) -->
+    <!-- <script src="pdf-generator.js?v=2.5" onload="window.UoEForm.logModuleStatus('pdfGenerator', true)" onerror="window.UoEForm.logModuleStatus('pdfGenerator', false)"></script> -->
+    
+    <!-- PHASE 5: Firebase Integration Module (when extracted) -->
+    <!-- <script src="firebase-integration.js?v=2.5" onload="window.UoEForm.logModuleStatus('firebaseIntegration', true)" onerror="window.UoEForm.logModuleStatus('firebaseIntegration', false)"></script> -->
+    
+    <!-- PHASE 6: Main Application Controller -->
+    <script src="main.js?v=2.5" onload="window.UoEForm.logModuleStatus('mainApp', true)" onerror="window.UoEForm.logModuleStatus('mainApp', false)"></script>
+    
+    <!-- PHASE 7: Legacy Support (Temporary - will be removed after modularization) -->
+    <script src="script.js?v=2.5" onload="window.UoEForm.logModuleStatus('legacyScript', true)" onerror="window.UoEForm.logModuleStatus('legacyScript', false)"></script>
+    
+    <!-- Enhanced Script with Cascading Dropdowns (for compatibility) -->
+    <script src="enhanced_script_with_locations.js?v=2.5" onload="console.log('🔄 Enhanced location script loaded')" onerror="console.warn('⚠️ Enhanced location script not found - using modular system')"></script>
+    
+    <!-- ========================================
+         APPLICATION INITIALIZATION MONITORING
+         ======================================== -->
+    
+    <script>
+        // Wait for all modules to load and initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📋 DOM Ready - Initializing modular application...');
+            
+            // Check system status after modules load
+            setTimeout(() => {
+                console.log('🔍 Final System Check...');
+                
+                // Check if main application is available
+                if (typeof window.UoEFormStatus === 'function') {
+                    const status = window.UoEFormStatus();
+                    console.log('📊 Application Status:', status);
+                    
+                    if (status.initialized) {
+                        console.log('✅ Modular application initialized successfully');
+                    } else {
+                        console.warn('⚠️ Modular application initialization incomplete');
+                    }
+                } else {
+                    console.log('📋 Using legacy script.js initialization');
+                }
+                
+                // Log final loading status
+                console.log('📊 Final Loading Status:', window.UoEFormLoadingStatus());
+                
+                // Check JSON loading specifically
+                const jsonStatus = window.UoEForm.loadingStatus.locationJSON;
+                if (jsonStatus.attempted) {
+                    if (jsonStatus.loaded) {
+                        console.log('✅ JSON location data successfully integrated');
+                    } else {
+                        console.warn('⚠️ JSON location data failed - check kenyan_locations.json file');
+                        console.log('💡 Make sure kenyan_locations.json is in the same directory as index.html');
+                    }
+                } else {
+                    console.log('⏳ JSON location data loading not yet attempted');
+                }
+                
+            }, 2000);
+        });
+
+        // Enhanced JSON Loading Monitor
+        function monitorJSONLoading() {
+            // Monitor both location-manager.js and script.js approaches
+            
+            // Option 1: Monitor modular location manager
+            if (window.UoEForm && window.UoEForm.LocationManager) {
+                const originalLoadLocationData = window.UoEForm.LocationManager.loadLocationData;
+                if (originalLoadLocationData) {
+                    window.UoEForm.LocationManager.loadLocationData = async function() {
+                        console.log('🗺️ Modular Location Manager attempting to load JSON data...');
+                        window.UoEForm.logJSONStatus('attempting');
+                        try {
+                            const result = await originalLoadLocationData.call(this);
+                            if (result) {
+                                window.UoEForm.logJSONStatus('success');
+                                console.log('✅ Location data processed successfully');
+                                console.log('📊 Counties loaded:', Object.keys(this.data?.counties || {}).length);
+                                console.log('📊 Subcounties loaded:', Object.keys(this.data?.subcounties || {}).length);
+                            } else {
+                                window.UoEForm.logJSONStatus('fallback');
+                                console.log('⚠️ Using fallback counties');
+                            }
+                            return result;
+                        } catch (error) {
+                            window.UoEForm.logJSONStatus('error', error.message);
+                            console.error('❌ Location loading error:', error);
+                            throw error;
+                        }
+                    };
+                }
+            }
+            
+            // Option 2: Monitor legacy script.js function
+            if (typeof window.loadKenyanLocationData === 'function') {
+                const originalLoadKenyanLocationData = window.loadKenyanLocationData;
+                window.loadKenyanLocationData = async function() {
+                    console.log('🗺️ Legacy Script attempting to load JSON data...');
+                    window.UoEForm.logJSONStatus('attempting');
+                    try {
+                        const result = await originalLoadKenyanLocationData.call(this);
+                        window.UoEForm.logJSONStatus('success');
+                        return result;
+                    } catch (error) {
+                        window.UoEForm.logJSONStatus('error', error.message);
+                        throw error;
+                    }
+                };
+            }
+        }
+
+        // Force Location Manager Initialization with URL Fix
+        function forceLocationManagerInit() {
+            if (window.UoEForm && window.UoEForm.LocationManager) {
+                console.log('🔄 Force-initializing Location Manager...');
+                
+                // Fix the URL issue before attempting reload
+                if (!window.UoEForm.config) {
+                    window.UoEForm.config = {};
+                }
+                if (!window.UoEForm.config.locationDataUrl) {
+                    window.UoEForm.config.locationDataUrl = './kenyan_locations.json'; // lowercase 'u'
+                    console.log('🔧 Fixed location data URL:', window.UoEForm.config.locationDataUrl);
+                }
+                if (!window.UoEForm.config.locationDataURL) {
+                    window.UoEForm.config.locationDataURL = './kenyan_locations.json'; // uppercase 'URL'
+                }
+                
+                // Reset state
+                window.UoEForm.LocationManager.isLoaded = false;
+                window.UoEForm.LocationManager.data = null;
+                
+                // Force reload
+                window.UoEForm.LocationManager.loadLocationData()
+                    .then(result => {
+                        if (result) {
+                            console.log('✅ Force initialization successful!');
+                            console.log('📊 Data loaded - Counties:', Object.keys(window.UoEForm.LocationManager.data?.counties || {}).length);
+                            
+                            // Update dropdown immediately
+                            const countySelect = document.getElementById('county');
+                            if (countySelect && countySelect.innerHTML.includes('data-fallback')) {
+                                console.log('🔄 Refreshing county dropdown...');
+                                window.UoEForm.LocationManager.initializeCountyDropdown();
+                            }
+                        } else {
+                            console.log('⚠️ Force initialization used fallback');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Force initialization failed:', error);
+                    });
+            }
+        }
+
+        // Monitor JSON loading after all modules load
+        setTimeout(monitorJSONLoading, 1000);
+        
+        // Force location manager initialization after page load
+        setTimeout(forceLocationManagerInit, 3000);
+        
+        // Additional monitoring for script.js
+        setTimeout(() => {
+            // Check if the legacy script is being used
+            if (typeof window.loadKenyanLocationData === 'function' && !window.UoEForm.loadingStatus.locationJSON.attempted) {
+                console.log('🔄 Checking for legacy script.js JSON loading...');
+                monitorJSONLoading();
+            }
+        }, 2000);
+
+        // Global error handling
+        window.addEventListener('error', function(e) {
+            console.error('🔥 Application Error:', e.error);
+            
+            // Check if it's a JSON loading error
+            if (e.error && e.error.message && e.error.message.includes('kenyan_locations.json')) {
+                window.UoEForm.logJSONStatus('error', e.error.message);
+            }
+        });
+
+        // Network monitoring for JSON loading
+        window.addEventListener('online', () => {
+            console.log('🌐 Network connection restored - retrying JSON load if needed');
+        });
+
+        window.addEventListener('offline', () => {
+            console.warn('📵 Network connection lost - JSON loading may fail');
+        });
+    </script>
+
+    <!-- ========================================
+         DEVELOPMENT AND DEBUGGING TOOLS
+         ======================================== -->
+    
+    <script>
+        // Development tools
+        console.log('🔧 Development Tools Available:');
+        console.log('   - UoEFormStatus() - Check application status');
+        console.log('   - UoEFormDiagnose() - Run diagnostic tests (when available)');
+        console.log('   - UoEFormLoadingStatus() - Check loading status');
+        console.log('   - UoEFormModules() - List loaded modules (when available)');
+        console.log('   - checkJSONStatus() - Check JSON loading status');
+        console.log('   - debugLocationLoading() - Comprehensive location debug');
+        console.log('   - checkModuleStatus() - Check module loading status');
+        
+        // Comprehensive Debug Function
+        window.debugLocationLoading = function() {
+            console.log('🔍 === LOCATION LOADING DEBUG REPORT ===');
+            
+            // Check if kenyan_locations.json file exists
+            console.log('📁 Checking kenyan_locations.json file...');
+            fetch('./kenyan_locations.json')
+                .then(response => {
+                    if (response.ok) {
+                        console.log('✅ kenyan_locations.json file exists and is accessible');
+                        return response.json();
+                    } else {
+                        console.error('❌ kenyan_locations.json file not found or not accessible');
+                        console.log('💡 Make sure kenyan_locations.json is in the same directory as index.html');
+                        return null;
+                    }
+                })
+                .then(data => {
+                    if (data) {
+                        console.log('📊 JSON file structure:', Object.keys(data));
+                        if (data.tables) {
+                            console.log('📊 Tables found:', data.tables.map(t => t.name));
+                        }
+                        if (data.counties) {
+                            console.log('📊 Direct counties found:', Array.isArray(data.counties) ? data.counties.length : Object.keys(data.counties).length);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Error accessing kenyan_locations.json:', error);
+                    console.log('💡 Possible issues:');
+                    console.log('   - File does not exist in the root directory');
+                    console.log('   - File permissions issue');
+                    console.log('   - Server configuration blocking JSON files');
+                    console.log('   - CORS issues (if testing locally)');
+                });
+            
+            // Check module status
+            console.log('📦 Module Status:');
+            console.log('   - Location Manager loaded:', !!(window.UoEForm && window.UoEForm.LocationManager));
+            console.log('   - Legacy loadKenyanLocationData:', typeof window.loadKenyanLocationData);
+            console.log('   - Main App loaded:', !!(window.UoEForm && window.UoEForm.App));
+            
+            // Check current status
+            const status = window.UoEFormLoadingStatus();
+            console.log('📊 Current Loading Status:', status);
+            
+            // Check county dropdown
+            const countySelect = document.getElementById('county');
+            if (countySelect) {
+                console.log('🏛️ County Dropdown Status:');
+                console.log('   - Options count:', countySelect.options.length);
+                console.log('   - Loading class:', countySelect.classList.contains('loading-dropdown'));
+                console.log('   - Current HTML:', countySelect.innerHTML.substring(0, 100) + '...');
+            }
+            
+            console.log('🔍 === END DEBUG REPORT ===');
+        };
+        
+        // JSON Status Checker (Enhanced)
+        window.checkJSONStatus = function() {
+            const status = window.UoEFormLoadingStatus();
+            console.log('📊 Current JSON Loading Status:', status.locationJSON);
+            
+            if (status.locationJSON.loaded) {
+                console.log('✅ JSON data is loaded and ready');
+                if (window.UoEForm && window.UoEForm.LocationManager && window.UoEForm.LocationManager.data) {
+                    console.log('📊 Available counties:', Object.keys(window.UoEForm.LocationManager.data.counties || {}).length);
+                    console.log('📊 Available subcounties:', Object.keys(window.UoEForm.LocationManager.data.subcounties || {}).length);
+                }
+            } else if (status.locationJSON.attempted) {
+                console.warn('❌ JSON data failed to load:', status.locationJSON.error);
+                console.log('💡 Run debugLocationLoading() for detailed diagnosis');
+            } else {
+                console.log('⏳ JSON loading not yet attempted');
+                console.log('💡 Possible reasons:');
+                console.log('   - Modules still loading');
+                console.log('   - Location manager not initialized yet');
+                console.log('   - Check if location-manager.js loaded properly');
+                console.log('💡 Run debugLocationLoading() for detailed diagnosis');
+            }
+            
+            return status;
+        };
+        
+        // Module Status Checker
+        window.checkModuleStatus = function() {
+            const status = window.UoEFormLoadingStatus();
+            console.log('📊 Module Loading Status:', status.modules);
+            
+            Object.entries(status.modules).forEach(([module, loaded]) => {
+                if (loaded) {
+                    console.log(`✅ ${module}: Loaded`);
+                } else {
+                    console.log(`❌ ${module}: Not loaded`);
+                }
+            });
+            
+            return status.modules;
+        };
+    </script>
+    
+    <!-- Logo Error Handlers (Original) -->
     <script>
         function handleLogoError() {
             const logo = document.getElementById('universityLogo');
@@ -661,5 +1074,6 @@
             }
         }
     </script>
+
 </body>
 </html>

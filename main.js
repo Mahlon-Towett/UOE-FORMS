@@ -1,13 +1,69 @@
 // main.js - Main Application Controller
-// University of Eldoret Student Form - Main Module
+// University of Eldoret Student Form - Complete Modular System
 
 /**
  * Main application controller that:
  * - Coordinates all modules
  * - Provides global functions for HTML buttons
  * - Manages initialization sequence
- * - Handles error reporting
+ * - Handles error reporting and diagnostics
  */
+
+// ========================================
+// GLOBAL NAMESPACE AND CONFIG
+// ========================================
+
+window.UoEForm = window.UoEForm || {};
+
+// Application configuration
+window.UoEForm.config = {
+    formVersion: "2.5",
+    isSubmitting: false,
+    debug: true,
+    firebaseInitialized: false,
+    
+    // Field configurations
+    siblingFields: ['sibling1', 'sibling2', 'sibling3', 'sibling4', 'sibling5'],
+    locationDataURL: 'kenyan_locations.json',
+    
+    // Required fields for validation
+    requiredFields: [
+        'fullName', 'admissionNumber', 'phoneNumber', 'nationalId', 
+        'nationality', 'gender', 'dateOfBirth', 'placeOfBirth', 
+        'permanentResidence', 'location', 'county', 'emergency1Name', 
+        'emergency1Relationship', 'emergency1Phone'
+    ]
+};
+
+// ========================================
+// FIREBASE INITIALIZATION HELPER
+// ========================================
+
+window.UoEForm.initializeFirebase = async function() {
+    console.log('🔥 Checking Firebase initialization...');
+    
+    // Wait for Firebase to be available
+    let attempts = 0;
+    const maxAttempts = 50; // 5 seconds max
+    
+    while (!window.db && attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    if (window.db) {
+        console.log('✅ Firebase connected successfully');
+        window.UoEForm.config.firebaseInitialized = true;
+        return true;
+    } else {
+        console.error('❌ Firebase initialization timeout');
+        return false;
+    }
+};
+
+window.UoEForm.checkFirebaseReady = function() {
+    return window.db && window.UoEForm.config.firebaseInitialized;
+};
 
 // ========================================
 // GLOBAL FUNCTION DEFINITIONS (IMMEDIATE)
@@ -17,7 +73,7 @@
 window.submitForm = function() {
     console.log('🚀 Submit form triggered');
     if (window.UoEForm && window.UoEForm.Firebase) {
-        window.UoEForm.Firebase.submit();
+        window.UoEForm.Firebase.submitToFirebase();
     } else {
         console.error('❌ Firebase module not ready');
         alert('System not ready. Please wait a moment and try again.');
@@ -27,45 +83,66 @@ window.submitForm = function() {
 window.clearForm = function() {
     console.log('🗑️ Clear form triggered');
     if (window.UoEForm && window.UoEForm.Utilities) {
-        window.UoEForm.Utilities.clear();
+        window.UoEForm.Utilities.clearForm();
     } else {
         console.error('❌ Utilities module not ready');
-        alert('System not ready. Please wait a moment and try again.');
+        // Fallback basic clear
+        if (confirm('Clear all form data?')) {
+            document.getElementById('studentForm').reset();
+            localStorage.removeItem('uoe_student_form_data');
+        }
     }
 };
 
 window.printForm = function() {
     console.log('🖨️ Print form triggered');
     if (window.UoEForm && window.UoEForm.PDFGenerator) {
-        window.UoEForm.PDFGenerator.print();
+        window.UoEForm.PDFGenerator.printForm();
     } else {
         console.error('❌ PDF Generator module not ready');
-        alert('System not ready. Please wait a moment and try again.');
+        // Fallback browser print
+        window.print();
     }
 };
 
 window.downloadPDF = function() {
     console.log('📄 Download PDF triggered');
     if (window.UoEForm && window.UoEForm.PDFGenerator) {
-        window.UoEForm.PDFGenerator.download();
+        window.UoEForm.PDFGenerator.generatePDF();
     } else {
         console.error('❌ PDF Generator module not ready');
-        alert('System not ready. Please wait a moment and try again.');
+        alert('PDF generation not available. Please try printing instead.');
     }
+};
+
+// Legacy function support from original script.js
+window.validateForm = function() {
+    if (window.UoEForm && window.UoEForm.Validator) {
+        return window.UoEForm.Validator.validateForm();
+    }
+    return false;
+};
+
+window.checkDataConsent = function() {
+    if (window.UoEForm && window.UoEForm.Validator) {
+        return window.UoEForm.Validator.checkDataConsent();
+    }
+    return false;
 };
 
 console.log('✅ Global functions defined immediately:', {
     submitForm: typeof window.submitForm,
     clearForm: typeof window.clearForm,
     printForm: typeof window.printForm,
-    downloadPDF: typeof window.downloadPDF
+    downloadPDF: typeof window.downloadPDF,
+    validateForm: typeof window.validateForm,
+    checkDataConsent: typeof window.checkDataConsent
 });
 
 // ========================================
 // MAIN APPLICATION CONTROLLER
 // ========================================
 
-window.UoEForm = window.UoEForm || {};
 window.UoEForm.App = {
     
     initialized: false,
@@ -92,6 +169,12 @@ window.UoEForm.App = {
             
             // Verify all modules are ready
             this.verifyModules();
+            
+            // Setup event listeners
+            this.setupGlobalEventListeners();
+            
+            // Load saved data if available
+            this.loadSavedFormData();
             
             // Mark as initialized
             this.initialized = true;
@@ -170,6 +253,77 @@ window.UoEForm.App = {
     },
     
     // ========================================
+    // EVENT LISTENERS SETUP
+    // ========================================
+    
+    setupGlobalEventListeners() {
+        // Auto-save functionality
+        document.addEventListener('input', this.debounce(() => {
+            if (window.UoEForm.Utilities && window.UoEForm.Utilities.saveFormData) {
+                window.UoEForm.Utilities.saveFormData();
+            }
+        }, 2000));
+        
+        // Prevent accidental page leave when form has data
+        window.addEventListener('beforeunload', (e) => {
+            const form = document.getElementById('studentForm');
+            if (form) {
+                const formData = new FormData(form);
+                let hasData = false;
+                for (let [key, value] of formData.entries()) {
+                    if (value && value.toString().trim()) {
+                        hasData = true;
+                        break;
+                    }
+                }
+                
+                if (hasData && !window.UoEForm.config.isSubmitting) {
+                    e.preventDefault();
+                    e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                    return e.returnValue;
+                }
+            }
+        });
+    },
+    
+    // ========================================
+    // SAVED DATA LOADING
+    // ========================================
+    
+    loadSavedFormData() {
+        try {
+            const savedData = localStorage.getItem('uoe_student_form_data');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                console.log('📄 Loading saved form data...');
+                
+                Object.entries(data).forEach(([fieldId, value]) => {
+                    const field = document.getElementById(fieldId);
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            field.checked = value;
+                        } else {
+                            field.value = value;
+                        }
+                    }
+                });
+                
+                // Trigger location dropdowns if county is saved
+                setTimeout(() => {
+                    const countySelect = document.getElementById('county');
+                    if (countySelect && countySelect.value && window.UoEForm.LocationManager) {
+                        window.UoEForm.LocationManager.handleCountyChange();
+                    }
+                }, 1000);
+                
+                console.log('✅ Saved form data loaded');
+            }
+        } catch (error) {
+            console.log('Unable to load saved data:', error);
+        }
+    },
+    
+    // ========================================
     // INITIALIZATION FEEDBACK
     // ========================================
     
@@ -213,16 +367,15 @@ window.UoEForm.App = {
     
     hideInitializationProgress() {
         const progress = document.getElementById('initializationProgress');
-        if (progress && document.body.contains(progress)) {
+        if (progress) {
             progress.style.opacity = '0';
             progress.style.transform = 'translateY(-100%)';
-            progress.style.transition = 'all 0.5s ease';
-            
+            progress.style.transition = 'all 0.3s ease';
             setTimeout(() => {
                 if (document.body.contains(progress)) {
                     document.body.removeChild(progress);
                 }
-            }, 500);
+            }, 300);
         }
     },
     
@@ -232,46 +385,33 @@ window.UoEForm.App = {
             position: fixed;
             top: 20px;
             right: 20px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            background: #28a745;
             color: white;
             padding: 15px 20px;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 14px;
             z-index: 10001;
             box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-            animation: slideInRight 0.5s ease;
+            transition: all 0.3s ease;
         `;
         notification.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px;">
                 <span style="font-size: 18px;">✅</span>
-                <div>
-                    <strong>System Ready</strong><br>
-                    <small>All modules initialized successfully</small>
-                </div>
+                <strong>System Ready</strong>
             </div>
-            <style>
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            </style>
         `;
         
         document.body.appendChild(notification);
         
         setTimeout(() => {
-            if (document.body.contains(notification)) {
-                notification.style.opacity = '0';
-                notification.style.transform = 'translateX(100%)';
-                notification.style.transition = 'all 0.5s ease';
-                
-                setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        document.body.removeChild(notification);
-                    }
-                }, 500);
-            }
-        }, 4000);
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
     },
     
     handleInitializationError(error) {
@@ -290,26 +430,51 @@ window.UoEForm.App = {
             font-size: 16px;
             z-index: 10003;
             box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
-            max-width: 400px;
+            max-width: 500px;
             text-align: center;
         `;
         errorNotification.innerHTML = `
             <div style="font-size: 24px; margin-bottom: 15px;">❌</div>
             <strong>Initialization Error</strong><br>
-            <small style="margin-top: 10px; display: block;">${error.message}</small>
-            <button onclick="window.location.reload()" style="
-                background: white; 
-                color: #dc3545; 
-                border: none; 
-                padding: 10px 20px; 
-                border-radius: 6px; 
-                margin-top: 15px;
-                cursor: pointer;
-                font-weight: bold;
-            ">Reload Page</button>
+            <div style="margin: 10px 0; font-size: 14px; opacity: 0.9;">${error.message}</div>
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="window.location.reload()" style="
+                    background: white; 
+                    color: #dc3545; 
+                    border: none; 
+                    padding: 10px 20px; 
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-weight: bold;
+                ">Reload Page</button>
+                <button onclick="window.UoEForm.App.restart()" style="
+                    background: rgba(255,255,255,0.2); 
+                    color: white; 
+                    border: 1px solid white; 
+                    padding: 10px 20px; 
+                    border-radius: 6px;
+                    cursor: pointer;
+                ">Retry</button>
+            </div>
         `;
         
         document.body.appendChild(errorNotification);
+    },
+    
+    // ========================================
+    // UTILITY FUNCTIONS
+    // ========================================
+    
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     },
     
     // ========================================
@@ -321,12 +486,15 @@ window.UoEForm.App = {
             initialized: this.initialized,
             modules: this.modules,
             firebaseReady: window.UoEForm.checkFirebaseReady(),
-            locationDataLoaded: window.UoEForm.LocationManager ? window.UoEForm.LocationManager.isLoaded : false,
+            locationDataLoaded: window.UoEForm.LocationManager ? 
+                window.UoEForm.LocationManager.isLoaded : false,
             globalFunctions: {
                 submitForm: typeof window.submitForm,
                 clearForm: typeof window.clearForm,
                 printForm: typeof window.printForm,
-                downloadPDF: typeof window.downloadPDF
+                downloadPDF: typeof window.downloadPDF,
+                validateForm: typeof window.validateForm,
+                checkDataConsent: typeof window.checkDataConsent
             }
         };
     },
@@ -364,7 +532,116 @@ window.UoEForm.App = {
         console.log('🔄 Restarting application...');
         this.initialized = false;
         this.modules = {};
+        
+        // Remove any existing error messages
+        const existingErrors = document.querySelectorAll('[id*="Error"], [id*="Progress"]');
+        existingErrors.forEach(el => {
+            if (document.body.contains(el)) {
+                document.body.removeChild(el);
+            }
+        });
+        
         await this.initialize();
+    }
+};
+
+// ========================================
+// MODULE STUBS (FOR MISSING MODULES)
+// ========================================
+
+// These provide basic fallbacks if the individual module files aren't loaded
+
+window.UoEForm.Validator = window.UoEForm.Validator || {
+    initialize() {
+        console.log('📝 Form Validator (stub) initialized');
+    },
+    
+    validateForm() {
+        console.warn('⚠️ Using basic validation - load form-validator.js for full validation');
+        const requiredFields = window.UoEForm.config.requiredFields;
+        
+        for (let fieldId of requiredFields) {
+            const field = document.getElementById(fieldId);
+            if (field && !field.value.trim()) {
+                alert(`Please fill in the ${fieldId} field`);
+                field.focus();
+                return false;
+            }
+        }
+        return true;
+    },
+    
+    checkDataConsent() {
+        const dataConsent = document.getElementById('dataConsent');
+        const dataRights = document.getElementById('dataRights');
+        
+        if (!dataConsent?.checked || !dataRights?.checked) {
+            alert('Please accept data processing consent and acknowledge your rights');
+            return false;
+        }
+        return true;
+    },
+    
+    calculateAge(dateString) {
+        const today = new Date();
+        const birthDate = new Date(dateString);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        
+        return age;
+    }
+};
+
+window.UoEForm.Utilities = window.UoEForm.Utilities || {
+    initialize() {
+        console.log('🛠️ Form Utilities (stub) initialized');
+    },
+    
+    clearForm() {
+        if (confirm('Are you sure you want to clear all form data?')) {
+            document.getElementById('studentForm').reset();
+            localStorage.removeItem('uoe_student_form_data');
+            console.log('🗑️ Form cleared');
+        }
+    },
+    
+    saveFormData() {
+        try {
+            const form = document.getElementById('studentForm');
+            const formData = new FormData(form);
+            const data = {};
+            
+            for (let [key, value] of formData.entries()) {
+                data[key] = value;
+            }
+            
+            localStorage.setItem('uoe_student_form_data', JSON.stringify(data));
+        } catch (error) {
+            console.warn('Unable to save form data:', error);
+        }
+    }
+};
+
+window.UoEForm.PDFGenerator = window.UoEForm.PDFGenerator || {
+    generatePDF() {
+        console.warn('⚠️ PDF Generator (stub) - load pdf-generator.js for full functionality');
+        alert('PDF generation requires the pdf-generator.js module');
+    },
+    
+    printForm() {
+        console.log('🖨️ Using browser print (fallback)');
+        window.print();
+    }
+};
+
+window.UoEForm.Firebase = window.UoEForm.Firebase || {
+    submitToFirebase() {
+        console.warn('⚠️ Firebase Integration (stub) - load firebase-integration.js for full functionality');
+        alert('Form submission requires the firebase-integration.js module');
     }
 };
 
@@ -387,6 +664,10 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     }, 500);
 }
 
+// ========================================
+// GLOBAL DIAGNOSTIC FUNCTIONS
+// ========================================
+
 // Global diagnostic function for debugging
 window.UoEFormDiagnose = function() {
     return window.UoEForm.App.diagnose();
@@ -397,5 +678,21 @@ window.UoEFormStatus = function() {
     return window.UoEForm.App.getStatus();
 };
 
+// Development helper - list all available modules
+window.UoEFormModules = function() {
+    console.log('📦 Available UoEForm modules:', Object.keys(window.UoEForm));
+    return Object.keys(window.UoEForm);
+};
+
+// ========================================
+// LOADING COMPLETE
+// ========================================
+
 console.log('🎯 Main Application Controller loaded');
-console.log('📞 Diagnostic functions available: UoEFormDiagnose(), UoEFormStatus()');
+console.log('📞 Diagnostic functions available: UoEFormDiagnose(), UoEFormStatus(), UoEFormModules()');
+console.log('🔧 To restart the application: window.UoEForm.App.restart()');
+
+// Export for module systems if needed
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = window.UoEForm;
+}

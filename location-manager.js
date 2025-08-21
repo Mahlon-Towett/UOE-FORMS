@@ -1,9 +1,10 @@
 // location-manager.js - Kenyan Administrative Location Management
-// University of Eldoret Student Form - Location Module
+// University of Eldoret Student Form - Location Module (FIXED VERSION)
 
 /**
  * Handles loading and managing Kenyan administrative location data
  * Provides cascading dropdown functionality: County → Sub County → Constituency → Ward
+ * FIXED: Now supports PHPMyAdmin export format
  */
 
 window.UoEForm = window.UoEForm || {};
@@ -64,76 +65,106 @@ window.UoEForm.LocationManager = {
         console.log('🔄 Processing location data...');
         
         let counties = {};
-        let subcounties = {};
+        let subcounties = {}; // Back to subcounties (not constituencies)
         let wards = {};
         
         // Find the data tables in the JSON structure
         let countiesData = [];
         let subcountiesData = [];
-        let wardsData = [];
+        let wardsData = []; // This will be from "station" table
         
-        // Handle different JSON structures
-        if (rawData.tables) {
+        // 🔧 FIXED: Handle PHPMyAdmin export format (array of tables)
+        if (Array.isArray(rawData)) {
+            console.log('📊 PHPMyAdmin array format detected');
+            const tables = rawData.filter(item => item.type === 'table' && item.data);
+            
+            tables.forEach(table => {
+                if (table.name === 'counties' && table.data) {
+                    countiesData = table.data;
+                    console.log(`📊 Found counties table: ${table.data.length} records`);
+                } else if (table.name === 'subcounties' && table.data) {
+                    subcountiesData = table.data;
+                    console.log(`📊 Found subcounties table: ${table.data.length} records`);
+                } else if (table.name === 'station' && table.data) {
+                    wardsData = table.data; // Map station DB table to wards
+                    console.log(`📊 Found wards table (from station): ${table.data.length} records`);
+                }
+            });
+        }
+        // Handle standard table format
+        else if (rawData.tables) {
             rawData.tables.forEach(table => {
                 if (table.name === 'counties' && table.data) {
                     countiesData = table.data;
                 } else if (table.name === 'subcounties' && table.data) {
                     subcountiesData = table.data;
                 } else if (table.name === 'station' && table.data) {
-                    wardsData = table.data;
+                    wardsData = table.data; // Map to wards
                 }
             });
-        } else if (rawData.counties && rawData.subcounties && rawData.station) {
+        } 
+        // Handle direct object format
+        else if (rawData.counties && rawData.subcounties && rawData.station) {
             countiesData = rawData.counties;
             subcountiesData = rawData.subcounties;
-            wardsData = rawData.station;
+            wardsData = rawData.station; // Map to wards
         }
         
-        // Process counties
-        countiesData.forEach(county => {
-            counties[county.county_id] = {
-                id: county.county_id,
-                name: county.county_name,
-                displayName: this.formatCountyName(county.county_name)
-            };
-        });
-        
-        // Process subcounties/constituencies
-        subcountiesData.forEach(subcounty => {
-            const countyId = subcounty.county_id;
-            if (!subcounties[countyId]) {
-                subcounties[countyId] = {};
-            }
-            subcounties[countyId][subcounty.subcounty_id] = {
-                id: subcounty.subcounty_id,
-                name: subcounty.constituency_name,
-                displayName: this.formatSubcountyName(subcounty.constituency_name),
-                countyId: countyId
-            };
-        });
-        
-        // Process wards
-        wardsData.forEach(ward => {
-            if (ward.subcounty_id && ward.subcounty_id !== "0" && ward.ward && ward.ward.trim() !== "") {
-                const subcountyId = ward.subcounty_id;
-                if (!wards[subcountyId]) {
-                    wards[subcountyId] = {};
+        // 🔧 FIXED: Process counties with proper data structure
+        if (countiesData && countiesData.length > 0) {
+            countiesData.forEach(county => {
+                if (county.county_id && county.county_name) {
+                    counties[county.county_id] = {
+                        id: county.county_id,
+                        name: county.county_name,
+                        displayName: this.formatCountyName(county.county_name)
+                    };
                 }
-                wards[subcountyId][ward.station_id] = {
-                    id: ward.station_id,
-                    name: ward.ward,
-                    displayName: this.formatWardName(ward.ward),
-                    subcountyId: subcountyId,
-                    constituency: ward.constituency_name
-                };
-            }
-        });
+            });
+        }
+        
+        // 🔧 FIXED: Process subcounties with proper data structure
+        if (subcountiesData && subcountiesData.length > 0) {
+            subcountiesData.forEach(subcounty => {
+                const countyId = subcounty.county_id;
+                if (countyId && subcounty.subcounty_id) {
+                    if (!subcounties[countyId]) {
+                        subcounties[countyId] = {};
+                    }
+                    subcounties[countyId][subcounty.subcounty_id] = {
+                        id: subcounty.subcounty_id,
+                        name: subcounty.subcounty_name || subcounty.constituency_name,
+                        displayName: this.formatSubcountyName(subcounty.subcounty_name || subcounty.constituency_name),
+                        countyId: countyId
+                    };
+                }
+            });
+        }
+        
+        // 🔧 FIXED: Process wards (from station table) - link to subcounty_id and use "ward" field
+        if (wardsData && wardsData.length > 0) {
+            wardsData.forEach(station => {
+                const subcountyId = station.subcounty_id; // Link wards to subcounties via subcounty_id
+                if (subcountyId && station.station_id && station.ward) { // Use "ward" field, not "station_name"
+                    if (!wards[subcountyId]) {
+                        wards[subcountyId] = {};
+                    }
+                    wards[subcountyId][station.station_id] = {
+                        id: station.station_id,
+                        name: station.ward, // Use "ward" field
+                        displayName: this.formatWardName(station.ward), // Use "ward" field
+                        subcountyId: subcountyId,
+                        constituency: station.constituency_name
+                    };
+                }
+            });
+        }
         
         console.log(`✅ Processed ${Object.keys(counties).length} counties, ${Object.keys(subcounties).length} county groups, ${Object.keys(wards).length} subcounty groups`);
         
         return {
             counties: counties,
-            subcounties: subcounties,
+            subcounties: subcounties, // Back to subcounties
             wards: wards
         };
     },
@@ -226,96 +257,82 @@ window.UoEForm.LocationManager = {
             countySelect.appendChild(option);
         });
         
-        console.log('✅ Fallback county dropdown initialized');
-        this.showLocationDataWarning();
-    },
-    
-    showLocationDataWarning() {
-        const helpText = document.querySelector('#county').parentElement.querySelector('.location-help-text');
-        if (helpText) {
-            helpText.textContent = 'Using basic county list - subcounty data unavailable';
-            helpText.style.color = '#dc3545';
-        }
+        console.log(`✅ Fallback county dropdown initialized`);
     },
     
     // ========================================
-    // CASCADING DROPDOWN HANDLERS
+    // EVENT HANDLERS
     // ========================================
     
     handleCountyChange() {
         const countySelect = document.getElementById('county');
         const subCountySelect = document.getElementById('subCounty');
-        const constituencySelect = document.getElementById('constituency');
         const wardSelect = document.getElementById('ward');
         
         // Reset dependent dropdowns
         this.resetDropdown(subCountySelect, 'Select county first');
-        this.resetDropdown(constituencySelect, 'Select sub-county first');
-        this.resetDropdown(wardSelect, 'Select constituency first');
+        this.resetDropdown(wardSelect, 'Select sub-county first');
         
         const selectedCountyId = countySelect.value;
         
-        if (!selectedCountyId) {
+        if (!selectedCountyId || !this.isLoaded) {
             return;
         }
         
-        if (!this.isLoaded || !this.data) {
-            this.disableDropdown(subCountySelect, 'County selected - subcounty data unavailable');
-            return;
-        }
-        
-        // Get subcounties for selected county
-        const subcountiesForCounty = this.data.subcounties[selectedCountyId];
-        
-        if (!subcountiesForCounty || Object.keys(subcountiesForCounty).length === 0) {
-            this.disableDropdown(subCountySelect, 'No subcounties found for this county');
+        // Check if using fallback data
+        const selectedOption = countySelect.querySelector(`option[value="${selectedCountyId}"]`);
+        if (selectedOption && selectedOption.hasAttribute('data-fallback')) {
+            this.disableDropdown(subCountySelect, 'Using basic county list - subcounty data unavailable');
             return;
         }
         
         // Populate subcounty dropdown
-        this.populateSubCountyDropdown(subcountiesForCounty);
+        this.populateSubCountyDropdown(selectedCountyId);
     },
     
-    populateSubCountyDropdown(subcounties) {
+    populateSubCountyDropdown(countyId) {
         const subCountySelect = document.getElementById('subCounty');
         
-        subCountySelect.disabled = false;
         subCountySelect.classList.add('loading-dropdown');
-        subCountySelect.innerHTML = '<option value="">Loading subcounties...</option>';
         
         setTimeout(() => {
             subCountySelect.classList.remove('loading-dropdown');
             subCountySelect.innerHTML = '<option value="">Select Sub County</option>';
             
-            // Sort subcounties alphabetically
-            const sortedSubcounties = Object.values(subcounties)
-                .sort((a, b) => a.displayName.localeCompare(b.displayName));
-            
-            sortedSubcounties.forEach(subcounty => {
-                const option = document.createElement('option');
-                option.value = subcounty.id;
-                option.textContent = subcounty.displayName;
-                option.setAttribute('data-original-name', subcounty.name);
-                subCountySelect.appendChild(option);
-            });
-            
-            // Update help text
-            const helpText = subCountySelect.parentElement.querySelector('.location-help-text');
-            if (helpText) {
-                helpText.textContent = `${sortedSubcounties.length} subcounties available`;
-                helpText.style.color = '#28a745';
+            const subcounties = this.data.subcounties[countyId];
+            if (subcounties) {
+                // Sort subcounties alphabetically
+                const sortedSubcounties = Object.values(subcounties)
+                    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+                
+                sortedSubcounties.forEach(subcounty => {
+                    const option = document.createElement('option');
+                    option.value = subcounty.id;
+                    option.textContent = subcounty.displayName;
+                    option.setAttribute('data-original-name', subcounty.name);
+                    subCountySelect.appendChild(option);
+                });
+                
+                subCountySelect.disabled = false;
+                
+                // Update help text
+                const helpText = subCountySelect.parentElement.querySelector('.location-help-text');
+                if (helpText) {
+                    helpText.textContent = `${sortedSubcounties.length} subcounties available`;
+                    helpText.style.color = '#28a745';
+                }
+            } else {
+                this.disableDropdown(subCountySelect, 'No subcounties found for this county');
             }
         }, 300);
     },
     
     handleSubCountyChange() {
         const subCountySelect = document.getElementById('subCounty');
-        const constituencySelect = document.getElementById('constituency');
         const wardSelect = document.getElementById('ward');
         
-        // Reset dependent dropdowns
-        this.resetDropdown(constituencySelect, 'Select sub-county first');
-        this.resetDropdown(wardSelect, 'Select constituency first');
+        // Reset ward dropdown
+        this.resetDropdown(wardSelect, 'Select sub-county first');
         
         const selectedSubCountyId = subCountySelect.value;
         
@@ -323,92 +340,43 @@ window.UoEForm.LocationManager = {
             return;
         }
         
-        // Populate constituency dropdown
-        this.populateConstituencyDropdown(selectedSubCountyId);
+        // Populate ward dropdown using subcounty_id from station table
+        this.populateWardDropdown(selectedSubCountyId);
     },
     
-    populateConstituencyDropdown(subcountyId) {
-        const constituencySelect = document.getElementById('constituency');
-        const subCountySelect = document.getElementById('subCounty');
-        
-        // Get the selected subcounty info
-        const selectedOption = subCountySelect.querySelector(`option[value="${subcountyId}"]`);
-        const constituencyName = selectedOption ? selectedOption.textContent : 'Unknown';
-        
-        constituencySelect.disabled = false;
-        constituencySelect.innerHTML = '<option value="">Select Constituency</option>';
-        
-        // Add the constituency (same as subcounty in most cases)
-        const option = document.createElement('option');
-        option.value = subcountyId;
-        option.textContent = constituencyName;
-        constituencySelect.appendChild(option);
-        
-        // Auto-select the constituency
-        constituencySelect.value = subcountyId;
-        
-        // Update help text
-        const helpText = constituencySelect.parentElement.querySelector('.location-help-text');
-        if (helpText) {
-            helpText.textContent = 'Constituency selected automatically';
-            helpText.style.color = '#28a745';
-        }
-        
-        // Trigger ward loading
-        this.handleConstituencyChange();
-    },
-    
-    handleConstituencyChange() {
-        const constituencySelect = document.getElementById('constituency');
+    populateWardDropdown(subcountyId) {
         const wardSelect = document.getElementById('ward');
         
-        this.resetDropdown(wardSelect, 'Select constituency first');
-        
-        const selectedConstituencyId = constituencySelect.value;
-        
-        if (!selectedConstituencyId || !this.isLoaded) {
-            return;
-        }
-        
-        // Get wards for selected constituency/subcounty
-        const wardsForConstituency = this.data.wards[selectedConstituencyId];
-        
-        if (!wardsForConstituency || Object.keys(wardsForConstituency).length === 0) {
-            this.disableDropdown(wardSelect, 'No wards found for this constituency');
-            return;
-        }
-        
-        this.populateWardDropdown(wardsForConstituency);
-    },
-    
-    populateWardDropdown(wards) {
-        const wardSelect = document.getElementById('ward');
-        
-        wardSelect.disabled = false;
         wardSelect.classList.add('loading-dropdown');
-        wardSelect.innerHTML = '<option value="">Loading wards...</option>';
         
         setTimeout(() => {
             wardSelect.classList.remove('loading-dropdown');
-            wardSelect.innerHTML = '<option value="">Select Ward (Optional)</option>';
+            wardSelect.innerHTML = '<option value="">Select Ward</option>';
             
-            // Sort wards alphabetically
-            const sortedWards = Object.values(wards)
-                .sort((a, b) => a.displayName.localeCompare(b.displayName));
-            
-            sortedWards.forEach(ward => {
-                const option = document.createElement('option');
-                option.value = ward.id;
-                option.textContent = ward.displayName;
-                option.setAttribute('data-original-name', ward.name);
-                wardSelect.appendChild(option);
-            });
-            
-            // Update help text
-            const helpText = wardSelect.parentElement.querySelector('.location-help-text');
-            if (helpText) {
-                helpText.textContent = `${sortedWards.length} wards available`;
-                helpText.style.color = '#28a745';
+            const wards = this.data.wards[subcountyId];
+            if (wards) {
+                // Sort wards alphabetically
+                const sortedWards = Object.values(wards)
+                    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+                
+                sortedWards.forEach(ward => {
+                    const option = document.createElement('option');
+                    option.value = ward.id;
+                    option.textContent = ward.displayName;
+                    option.setAttribute('data-original-name', ward.name);
+                    wardSelect.appendChild(option);
+                });
+                
+                wardSelect.disabled = false;
+                
+                // Update help text
+                const helpText = wardSelect.parentElement.querySelector('.location-help-text');
+                if (helpText) {
+                    helpText.textContent = `${sortedWards.length} wards available`;
+                    helpText.style.color = '#28a745';
+                }
+            } else {
+                this.disableDropdown(wardSelect, 'No wards found for this sub-county');
             }
         }, 300);
     },
@@ -450,13 +418,11 @@ window.UoEForm.LocationManager = {
     getSelectedLocationHierarchy() {
         const countySelect = document.getElementById('county');
         const subCountySelect = document.getElementById('subCounty');
-        const constituencySelect = document.getElementById('constituency');
         const wardSelect = document.getElementById('ward');
         
         let hierarchy = {
             county: null,
             subCounty: null,
-            constituency: null,
             ward: null
         };
         
@@ -471,7 +437,7 @@ window.UoEForm.LocationManager = {
             };
         }
         
-        // SubCounty information
+        // Sub County information
         if (subCountySelect && subCountySelect.value && !subCountySelect.disabled) {
             const subCountyOption = subCountySelect.querySelector(`option[value="${subCountySelect.value}"]`);
             hierarchy.subCounty = {
@@ -482,17 +448,6 @@ window.UoEForm.LocationManager = {
             };
         }
         
-        // Constituency information
-        if (constituencySelect && constituencySelect.value && !constituencySelect.disabled) {
-            const constituencyOption = constituencySelect.querySelector(`option[value="${constituencySelect.value}"]`);
-            hierarchy.constituency = {
-                id: constituencySelect.value,
-                name: constituencyOption ? constituencyOption.getAttribute('data-original-name') || constituencyOption.textContent : null,
-                displayName: constituencyOption ? constituencyOption.textContent : null,
-                subcountyId: subCountySelect.value
-            };
-        }
-        
         // Ward information
         if (wardSelect && wardSelect.value && !wardSelect.disabled) {
             const wardOption = wardSelect.querySelector(`option[value="${wardSelect.value}"]`);
@@ -500,7 +455,7 @@ window.UoEForm.LocationManager = {
                 id: wardSelect.value,
                 name: wardOption ? wardOption.getAttribute('data-original-name') || wardOption.textContent : null,
                 displayName: wardOption ? wardOption.textContent : null,
-                constituencyId: constituencySelect.value
+                subcountyId: subCountySelect.value
             };
         }
         
@@ -509,11 +464,10 @@ window.UoEForm.LocationManager = {
     
     calculateLocationCompleteness(hierarchy) {
         let score = 0;
-        let maxScore = 4;
+        let maxScore = 3;
         
         if (hierarchy.county) score += 1;
         if (hierarchy.subCounty) score += 1;
-        if (hierarchy.constituency) score += 1;
         if (hierarchy.ward) score += 1;
         
         return Math.round((score / maxScore) * 100);
@@ -543,7 +497,6 @@ window.UoEForm.LocationManager = {
     setupEventListeners() {
         const countySelect = document.getElementById('county');
         const subCountySelect = document.getElementById('subCounty');
-        const constituencySelect = document.getElementById('constituency');
         
         if (countySelect) {
             countySelect.addEventListener('change', () => this.handleCountyChange());
@@ -551,10 +504,6 @@ window.UoEForm.LocationManager = {
         
         if (subCountySelect) {
             subCountySelect.addEventListener('change', () => this.handleSubCountyChange());
-        }
-        
-        if (constituencySelect) {
-            constituencySelect.addEventListener('change', () => this.handleConstituencyChange());
         }
     }
 };
