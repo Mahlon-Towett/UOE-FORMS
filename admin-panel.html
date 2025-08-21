@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UoE Admin Panel - Student Submissions Management</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, orderBy, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQ4B3CdAJ4WoFu-bPlZQtLgdpHvkXTK0w",
+            authDomain: "uoe-student-form.firebaseapp.com",
+            projectId: "uoe-student-form",
+            storageBucket: "uoe-student-form.firebasestorage.app",
+            messagingSenderId: "1023597600972",
+            appId: "1:1023597600972:web:4a79cca07365059d392269",
+            measurementId: "G-HS1FV2ZS80"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        
+        // Make Firestore functions available globally
+        window.firestoreFunctions = {
+            collection,
+            getDocs,
+            query,
+            orderBy,
+            where,
+            onSnapshot
+        };
+        
+        console.log('🔥 Admin Panel Firebase initialized');
+    </script>
+    
+    <!-- React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Chart.js for beautiful charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .stat-card:hover::before {
+            left: 100%;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .stat-card-blue {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+        
+        .stat-card-green {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        
+        .stat-card-purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+        
+        .stat-card-orange {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .data-table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        
+        .data-table th {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            font-weight: 600;
+            padding: 16px 12px;
+            text-align: left;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+        }
+        
+        .data-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        
+        .data-table tr:hover {
+            background: linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%);
+            transform: scale(1.001);
+            transition: all 0.2s ease;
+        }
+        
+        .export-btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .export-btn:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+        
+        .tab-button {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .search-input {
+            transition: all 0.3s ease;
+        }
+        
+        .search-input:focus {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .chart-container:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .modal-backdrop {
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.4);
+        }
+        
+        .modal-content {
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .icon-wrapper {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 8px;
+        }
+        
+        .view-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .view-btn:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="admin-root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        
+        // Icons component (simplified versions)
+        const Icons = {
+            Users: () => (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+            ),
+            TrendingUp: () => (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+            ),
+            Calendar: () => (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+            ),
+            BarChart: () => (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+            ),
+            Search: () => (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            ),
+            Download: () => (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+            ),
+            GraduationCap: () => (
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14v7" />
+                </svg>
+            ),
+            Eye: () => (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+            ),
+            RefreshCw: () => (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            ),
+            FileText: () => (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            ),
+        };
+        
+        // Utility functions
+        const formatDate = (timestamp) => {
+            if (!timestamp) return 'N/A';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        };
+        
+        const exportToCSV = (data, filename) => {
+            if (!data.length) return;
+            
+            const headers = [
+                'Submission Date', 'Full Name', 'Admission Number', 'Phone', 'Gender', 
+                'Age', 'County', 'Sub County', 'Emergency Contact', 'KCSE Year', 'Secondary School'
+            ];
+            
+            const csvContent = [
+                headers.join(','),
+                ...data.map(student => [
+                    formatDate(student.metadata?.submissionDate),
+                    student.personalInfo?.fullName || '',
+                    student.personalInfo?.admissionNumber || '',
+                    student.personalInfo?.phoneNumber || '',
+                    student.personalInfo?.gender || '',
+                    student.personalInfo?.age || '',
+                    student.locationInfo?.county || '',
+                    student.locationInfo?.subCounty || '',
+                    student.emergencyContacts?.[0]?.name || '',
+                    student.academicInfo?.kcse?.year || '',
+                    student.academicInfo?.secondarySchool?.name || ''
+                ].map(field => `"${field}"`).join(','))
+            ].join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${filename}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+        
+        // Loading Component
+        const LoadingSpinner = () => (
+            <div className="flex items-center justify-center p-8">
+                <div className="loading-spinner"></div>
+                <span className="ml-3 text-gray-600">Loading student data...</span>
+            </div>
+        );
+        
+        // Statistics Cards Component - Enhanced Design
+        const StatsCards = ({ students }) => {
+            const totalStudents = students.length;
+            const todaySubmissions = students.filter(s => {
+                const submissionDate = s.metadata?.submissionDate?.toDate?.() || new Date(s.metadata?.submissionDate);
+                const today = new Date();
+                return submissionDate.toDateString() === today.toDateString();
+            }).length;
+            
+            const thisMonthSubmissions = students.filter(s => {
+                const submissionDate = s.metadata?.submissionDate?.toDate?.() || new Date(s.metadata?.submissionDate);
+                const now = new Date();
+                return submissionDate.getMonth() === now.getMonth() && submissionDate.getFullYear() === now.getFullYear();
+            }).length;
+            
+            const genderCounts = students.reduce((acc, s) => {
+                const gender = s.personalInfo?.gender || 'Unknown';
+                acc[gender] = (acc[gender] || 0) + 1;
+                return acc;
+            }, {});
+            
+            const completionRate = students.length > 0 ? 
+                (students.reduce((sum, s) => sum + (s.analytics?.formCompleteness || 0), 0) / students.length).toFixed(1) : 0;
+            
+            const stats = [
+                {
+                    title: "Total Submissions",
+                    value: totalStudents.toLocaleString(),
+                    icon: Icons.Users,
+                    className: "stat-card-blue",
+                    description: "All time submissions"
+                },
+                {
+                    title: "Today's Submissions", 
+                    value: todaySubmissions,
+                    icon: Icons.TrendingUp,
+                    className: "stat-card-green",
+                    description: "New submissions today"
+                },
+                {
+                    title: "This Month",
+                    value: thisMonthSubmissions,
+                    icon: Icons.Calendar,
+                    className: "stat-card-purple", 
+                    description: "Monthly progress"
+                },
+                {
+                    title: "Completion Rate",
+                    value: `${completionRate}%`,
+                    icon: Icons.BarChart,
+                    className: "stat-card-orange",
+                    description: "Average form completion"
+                }
+            ];
+            
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {stats.map((stat, index) => (
+                        <div key={index} className={`stat-card ${stat.className} rounded-xl p-6 text-center fade-in`}>
+                            <div className="flex items-center justify-center mb-4">
+                                <div className="icon-wrapper">
+                                    <stat.icon />
+                                </div>
+                            </div>
+                            <div className="text-3xl font-bold mb-2">{stat.value}</div>
+                            <div className="text-sm opacity-90 font-medium mb-1">{stat.title}</div>
+                            <div className="text-xs opacity-75">{stat.description}</div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+        
+        // Charts Component - Using Chart.js
+        const ChartsSection = ({ students }) => {
+            useEffect(() => {
+                // County distribution chart
+                const countyCounts = students.reduce((acc, s) => {
+                    const county = s.locationInfo?.county || 'Unknown';
+                    acc[county] = (acc[county] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                const countyData = Object.entries(countyCounts)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+                
+                const countyCtx = document.getElementById('countyChart');
+                if (countyCtx) {
+                    new Chart(countyCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: countyData.map(([county]) => county),
+                            datasets: [{
+                                label: 'Students',
+                                data: countyData.map(([, count]) => count),
+                                backgroundColor: 'rgba(37, 99, 235, 0.8)',
+                                borderColor: 'rgba(37, 99, 235, 1)',
+                                borderWidth: 1,
+                                borderRadius: 4,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                title: { display: false }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+                
+                // Gender distribution chart
+                const genderCounts = students.reduce((acc, s) => {
+                    const gender = s.personalInfo?.gender || 'Unknown';
+                    acc[gender] = (acc[gender] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                const genderCtx = document.getElementById('genderChart');
+                if (genderCtx) {
+                    new Chart(genderCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(genderCounts),
+                            datasets: [{
+                                data: Object.values(genderCounts),
+                                backgroundColor: [
+                                    'rgba(37, 99, 235, 0.8)',
+                                    'rgba(220, 38, 38, 0.8)',
+                                    'rgba(5, 150, 105, 0.8)',
+                                ],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { padding: 20 }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                // Daily submissions trend
+                const dailyData = students.reduce((acc, s) => {
+                    const date = s.metadata?.submissionDate?.toDate?.() || new Date(s.metadata?.submissionDate);
+                    const dateStr = date.toDateString();
+                    acc[dateStr] = (acc[dateStr] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                const last7Days = [];
+                for (let i = 6; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toDateString();
+                    last7Days.push({
+                        date: date.toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }),
+                        count: dailyData[dateStr] || 0
+                    });
+                }
+                
+                const trendCtx = document.getElementById('trendChart');
+                if (trendCtx) {
+                    new Chart(trendCtx, {
+                        type: 'line',
+                        data: {
+                            labels: last7Days.map(d => d.date),
+                            datasets: [{
+                                label: 'Submissions',
+                                data: last7Days.map(d => d.count),
+                                borderColor: 'rgba(16, 185, 129, 1)',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointBackgroundColor: 'rgba(16, 185, 129, 1)',
+                                pointBorderWidth: 2,
+                                pointRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                }
+            }, [students]);
+            
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <div className="chart-container">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Trend (Last 7 Days)</h3>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                    
+                    <div className="chart-container">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Gender Distribution</h3>
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                    
+                    <div className="chart-container">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Counties</h3>
+                        <canvas id="countyChart"></canvas>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Search and Filter Component - Enhanced Design
+        const SearchFilter = ({ searchTerm, setSearchTerm, selectedCounty, setSelectedCounty, selectedGender, setSelectedGender, counties, onExport, studentsCount }) => (
+            <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="md:col-span-2 relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Icons.Search />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Search by name or admission number..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                    
+                    <select
+                        value={selectedCounty}
+                        onChange={(e) => setSelectedCounty(e.target.value)}
+                        className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    >
+                        <option value="">All Counties</option>
+                        {counties.map(county => (
+                            <option key={county} value={county}>{county}</option>
+                        ))}
+                    </select>
+                    
+                    <select
+                        value={selectedGender}
+                        onChange={(e) => setSelectedGender(e.target.value)}
+                        className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                    >
+                        <option value="">All Genders</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    
+                    <button
+                        onClick={onExport}
+                        className="export-btn text-white px-6 py-3 rounded-lg font-medium flex items-center justify-center"
+                    >
+                        <Icons.Download />
+                        <span className="ml-2">Export CSV ({studentsCount})</span>
+                    </button>
+                </div>
+            </div>
+        );
+        
+        // Enhanced Student Modal
+        const StudentModal = ({ student, onClose }) => {
+            if (!student) return null;
+            
+            return (
+                <div className="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
+                    <div className="modal-content bg-white rounded-xl max-w-6xl w-full max-h-screen overflow-y-auto shadow-2xl">
+                        <div className="p-8">
+                            <div className="flex justify-between items-center mb-8">
+                                <h2 className="text-3xl font-bold text-gray-900">Student Details</h2>
+                                <button
+                                    onClick={onClose}
+                                    className="text-gray-400 hover:text-gray-600 text-3xl font-light"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Personal Information */}
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-lg border border-blue-100">
+                                    <h3 className="font-semibold text-gray-900 mb-4 text-lg flex items-center">
+                                        <Icons.Users />
+                                        <span className="ml-2">Personal Information</span>
+                                    </h3>
+                                    <div className="space-y-3 text-sm">
+                                        <div><span className="font-medium text-gray-600">Name:</span> <span className="font-semibold">{student.personalInfo?.fullName}</span></div>
+                                        <div><span className="font-medium text-gray-600">Admission Number:</span> <span className="font-semibold">{student.personalInfo?.admissionNumber}</span></div>
+                                        <div><span className="font-medium text-gray-600">Phone:</span> <span className="font-semibold">{student.personalInfo?.phoneNumber}</span></div>
+                                        <div><span className="font-medium text-gray-600">National ID:</span> <span className="font-semibold">{student.personalInfo?.nationalId}</span></div>
+                                        <div><span className="font-medium text-gray-600">Gender:</span> <span className="font-semibold">{student.personalInfo?.gender}</span></div>
+                                        <div><span className="font-medium text-gray-600">Age:</span> <span className="font-semibold">{student.personalInfo?.age} years</span></div>
+                                        <div><span className="font-medium text-gray-600">Date of Birth:</span> <span className="font-semibold">{student.personalInfo?.dateOfBirth}</span></div>
+                                        <div><span className="font-medium text-gray-600">Nationality:</span> <span className="font-semibold">{student.personalInfo?.nationality}</span></div>
+                                    </div>
+                                </div>
+                                
+                                {/* Location Information */}
+                                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-lg border border-green-100">
+                                    <h3 className="font-semibold text-gray-900 mb-4 text-lg">Location Information</h3>
+                                    <div className="space-y-3 text-sm">
+                                        <div><span className="font-medium text-gray-600">County:</span> <span className="font-semibold">{student.locationInfo?.county}</span></div>
+                                        <div><span className="font-medium text-gray-600">Sub County:</span> <span className="font-semibold">{student.locationInfo?.subCounty}</span></div>
+                                        <div><span className="font-medium text-gray-600">Permanent Residence:</span> <span className="font-semibold">{student.locationInfo?.permanentResidence}</span></div>
+                                        <div><span className="font-medium text-gray-600">Location:</span> <span className="font-semibold">{student.locationInfo?.location}</span></div>
+                                        <div><span className="font-medium text-gray-600">Home Address:</span> <span className="font-semibold">{student.locationInfo?.homeAddress}</span></div>
+                                    </div>
+                                </div>
+                                
+                                {/* Emergency Contacts */}
+                                <div className="bg-gradient-to-br from-red-50 to-pink-50 p-6 rounded-lg border border-red-100">
+                                    <h3 className="font-semibold text-gray-900 mb-4 text-lg">Emergency Contacts</h3>
+                                    {student.emergencyContacts?.map((contact, index) => (
+                                        <div key={index} className="mb-4 pb-4 border-b border-red-200 last:border-b-0">
+                                            <div className="text-sm space-y-2">
+                                                <div><span className="font-medium text-gray-600">Name:</span> <span className="font-semibold">{contact.name}</span></div>
+                                                <div><span className="font-medium text-gray-600">Relationship:</span> <span className="font-semibold">{contact.relationship}</span></div>
+                                                <div><span className="font-medium text-gray-600">Phone:</span> <span className="font-semibold">{contact.phoneNumber}</span></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                {/* Academic Information */}
+                                <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-lg border border-purple-100">
+                                    <h3 className="font-semibold text-gray-900 mb-4 text-lg">Academic Information</h3>
+                                    <div className="space-y-3 text-sm">
+                                        <div><span className="font-medium text-gray-600">Secondary School:</span> <span className="font-semibold">{student.academicInfo?.secondarySchool?.name}</span></div>
+                                        <div><span className="font-medium text-gray-600">KCSE Year:</span> <span className="font-semibold">{student.academicInfo?.kcse?.year}</span></div>
+                                        <div><span className="font-medium text-gray-600">Index Number:</span> <span className="font-semibold">{student.academicInfo?.kcse?.indexNumber}</span></div>
+                                        <div><span className="font-medium text-gray-600">KCSE Results:</span> <span className="font-semibold">{student.academicInfo?.kcse?.results}</span></div>
+                                    </div>
+                                </div>
+                                
+                                {/* Family Information */}
+                                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-lg border border-orange-100 md:col-span-2">
+                                    <h3 className="font-semibold text-gray-900 mb-4 text-lg">Family Information</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <h4 className="font-medium text-gray-700 mb-3">Father</h4>
+                                            <div className="text-sm space-y-2">
+                                                <div>Name: <span className="font-semibold">{student.familyInfo?.father?.fullName || 'N/A'}</span></div>
+                                                <div>Status: <span className="font-semibold">{student.familyInfo?.father?.status || 'N/A'}</span></div>
+                                                <div>Occupation: <span className="font-semibold">{student.familyInfo?.father?.occupation || 'N/A'}</span></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-medium text-gray-700 mb-3">Mother</h4>
+                                            <div className="text-sm space-y-2">
+                                                <div>Name: <span className="font-semibold">{student.familyInfo?.mother?.fullName || 'N/A'}</span></div>
+                                                <div>Status: <span className="font-semibold">{student.familyInfo?.mother?.status || 'N/A'}</span></div>
+                                                <div>Occupation: <span className="font-semibold">{student.familyInfo?.mother?.occupation || 'N/A'}</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {student.familyInfo?.siblings?.length > 0 && (
+                                        <div className="mt-6">
+                                            <h4 className="font-medium text-gray-700 mb-3">Siblings</h4>
+                                            <div className="text-sm">
+                                                {student.familyInfo.siblings.join(', ')}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Submission Information */}
+                                <div className="bg-gradient-to-br from-gray-50 to-slate-50 p-6 rounded-lg border border-gray-100 md:col-span-2">
+                                    <h3 className="font-semibold text-gray-900 mb-4 text-lg">Submission Information</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
+                                        <div><span className="font-medium text-gray-600">Submitted:</span> <span className="font-semibold">{formatDate(student.metadata?.submissionDate)}</span></div>
+                                        <div><span className="font-medium text-gray-600">Form Version:</span> <span className="font-semibold">{student.metadata?.formVersion}</span></div>
+                                        <div><span className="font-medium text-gray-600">Completeness:</span> <span className="font-semibold">{student.analytics?.formCompleteness}%</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // Enhanced Students Table
+        const StudentsTable = ({ students, onViewStudent, currentPage, setCurrentPage, studentsPerPage }) => {
+            const totalPages = Math.ceil(students.length / studentsPerPage);
+            const startIndex = (currentPage - 1) * studentsPerPage;
+            const currentStudents = students.slice(startIndex, startIndex + studentsPerPage);
+            
+            return (
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100">
+                    <div className="overflow-x-auto">
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student Information</th>
+                                    <th>Location Details</th>
+                                    <th>Emergency Contact</th>
+                                    <th>Academic Info</th>
+                                    <th>Submission Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {currentStudents.map((student, index) => (
+                                    <tr key={student.id || index} className="fade-in">
+                                        <td>
+                                            <div>
+                                                <div className="font-semibold text-gray-900 text-base">{student.personalInfo?.fullName}</div>
+                                                <div className="text-sm text-blue-600 font-medium">{student.personalInfo?.admissionNumber}</div>
+                                                <div className="text-sm text-gray-500">{student.personalInfo?.gender}, Age {student.personalInfo?.age}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="text-sm">
+                                                <div className="font-medium text-gray-900">{student.locationInfo?.county}</div>
+                                                <div className="text-gray-500">{student.locationInfo?.subCounty}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="text-sm">
+                                                <div className="font-medium text-gray-900">{student.emergencyContacts?.[0]?.name || 'N/A'}</div>
+                                                <div className="text-gray-500">{student.emergencyContacts?.[0]?.relationship || 'N/A'}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="text-sm">
+                                                <div className="font-medium text-gray-900">KCSE {student.academicInfo?.kcse?.year || 'N/A'}</div>
+                                                <div className="text-gray-500">{student.academicInfo?.secondarySchool?.name || 'N/A'}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div className="text-sm">
+                                                <div className="font-medium text-gray-900">{formatDate(student.metadata?.submissionDate)}</div>
+                                                <div className="text-gray-500">v{student.metadata?.formVersion}</div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <button
+                                                onClick={() => onViewStudent(student)}
+                                                className="view-btn flex items-center"
+                                            >
+                                                <Icons.Eye />
+                                                <span className="ml-1">View</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {/* Enhanced Pagination */}
+                    <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                        <div className="text-sm text-gray-700">
+                            Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(startIndex + studentsPerPage, students.length)}</span> of <span className="font-medium">{students.length}</span> results
+                        </div>
+                        <div className="flex space-x-2">
+                            <button
+                                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                            >
+                                Previous
+                            </button>
+                            <span className="px-4 py-2 text-sm font-medium">
+                                Page {currentPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {students.length === 0 && (
+                        <div className="text-center py-12 text-gray-500">
+                            <Icons.Users />
+                            <div className="mt-4">No students found matching your search criteria.</div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        
+        // Dashboard Component
+        const Dashboard = ({ students }) => (
+            <div className="space-y-8">
+                <StatsCards students={students} />
+                <ChartsSection students={students} />
+            </div>
+        );
+        
+        // Main Admin Panel Component
+        const AdminPanel = () => {
+            const [students, setStudents] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedCounty, setSelectedCounty] = useState('');
+            const [selectedGender, setSelectedGender] = useState('');
+            const [selectedStudent, setSelectedStudent] = useState(null);
+            const [currentPage, setCurrentPage] = useState(1);
+            const [showExportModal, setShowExportModal] = useState(false);
+            const [error, setError] = useState(null);
+            
+            const studentsPerPage = 10;
+            
+            // Load students data from Firebase
+            useEffect(() => {
+                const loadStudents = async () => {
+                    try {
+                        if (!window.db || !window.firestoreFunctions) {
+                            throw new Error('Firebase not initialized');
+                        }
+                        
+                        const { collection, getDocs, query, orderBy } = window.firestoreFunctions;
+                        
+                        const studentsQuery = query(
+                            collection(window.db, 'student_submissions'),
+                            orderBy('metadata.submissionDate', 'desc')
+                        );
+                        
+                        const querySnapshot = await getDocs(studentsQuery);
+                        const studentsData = [];
+                        
+                        querySnapshot.forEach((doc) => {
+                            studentsData.push({
+                                id: doc.id,
+                                ...doc.data()
+                            });
+                        });
+                        
+                        setStudents(studentsData);
+                        setLoading(false);
+                        console.log(`📊 Loaded ${studentsData.length} student submissions`);
+                        
+                    } catch (error) {
+                        console.error('Error loading students:', error);
+                        setError(error.message);
+                        setLoading(false);
+                    }
+                };
+                
+                // Wait for Firebase to be ready
+                const checkFirebase = setInterval(() => {
+                    if (window.db && window.firestoreFunctions) {
+                        clearInterval(checkFirebase);
+                        loadStudents();
+                    }
+                }, 500);
+                
+                // Cleanup
+                return () => clearInterval(checkFirebase);
+            }, []);
+            
+            // Filter students based on search criteria
+            const filteredStudents = useMemo(() => {
+                return students.filter(student => {
+                    const matchesSearch = !searchTerm || 
+                        student.personalInfo?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        student.personalInfo?.admissionNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+                    
+                    const matchesCounty = !selectedCounty || student.locationInfo?.county === selectedCounty;
+                    const matchesGender = !selectedGender || student.personalInfo?.gender === selectedGender;
+                    
+                    return matchesSearch && matchesCounty && matchesGender;
+                });
+            }, [students, searchTerm, selectedCounty, selectedGender]);
+            
+            // Get unique counties for filter
+            const counties = [...new Set(students.map(s => s.locationInfo?.county).filter(Boolean))].sort();
+            
+            // Export function
+            const handleExport = () => {
+                const timestamp = new Date().toISOString().split('T')[0];
+                const filename = `UoE_Students_${timestamp}_${filteredStudents.length}_records`;
+                exportToCSV(filteredStudents, filename);
+                setShowExportModal(false);
+            };
+            
+            if (loading) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                        <LoadingSpinner />
+                    </div>
+                );
+            }
+            
+            if (error) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center">
+                        <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg">
+                            <strong>Error:</strong> {error}
+                        </div>
+                    </div>
+                );
+            }
+            
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+                    {/* Enhanced Header */}
+                    <header className="bg-white shadow-lg border-b border-gray-200">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center h-16">
+                                <div className="flex items-center">
+                                    <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg mr-3 flex items-center justify-center">
+                                        <Icons.GraduationCap />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-xl font-bold text-gray-900">University of Eldoret</h1>
+                                        <p className="text-sm text-gray-600">Student Management System</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center space-x-4">
+                                    <span className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                                        {new Date().toLocaleDateString('en-GB', { 
+                                            weekday: 'long', 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric' 
+                                        })}
+                                    </span>
+                                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100">
+                                        <Icons.RefreshCw />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    
+                    {/* Enhanced Navigation Tabs */}
+                    <nav className="bg-white shadow-sm border-b border-gray-100">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex space-x-8">
+                                <button
+                                    onClick={() => setActiveTab('dashboard')}
+                                    className={`tab-button py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'dashboard'
+                                            ? 'border-blue-500 text-blue-600 active'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    📊 Dashboard
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('students')}
+                                    className={`tab-button py-4 px-1 border-b-2 font-medium text-sm ${
+                                        activeTab === 'students'
+                                            ? 'border-blue-500 text-blue-600 active'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                                >
+                                    👥 Student Submissions ({students.length})
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+                    
+                    {/* Main Content */}
+                    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {activeTab === 'dashboard' && <Dashboard students={students} />}
+                        
+                        {activeTab === 'students' && (
+                            <div className="space-y-6">
+                                <SearchFilter
+                                    searchTerm={searchTerm}
+                                    setSearchTerm={setSearchTerm}
+                                    selectedCounty={selectedCounty}
+                                    setSelectedCounty={setSelectedCounty}
+                                    selectedGender={selectedGender}
+                                    setSelectedGender={setSelectedGender}
+                                    counties={counties}
+                                    onExport={() => setShowExportModal(true)}
+                                    studentsCount={filteredStudents.length}
+                                />
+                                
+                                <div className="mb-4">
+                                    <h2 className="text-xl font-semibold text-gray-900">
+                                        Student Submissions ({filteredStudents.length} of {students.length} total)
+                                    </h2>
+                                </div>
+                                
+                                <StudentsTable 
+                                    students={filteredStudents} 
+                                    onViewStudent={setSelectedStudent}
+                                    currentPage={currentPage}
+                                    setCurrentPage={setCurrentPage}
+                                    studentsPerPage={studentsPerPage}
+                                />
+                            </div>
+                        )}
+                    </main>
+                    
+                    {/* Enhanced Student Modal */}
+                    <StudentModal 
+                        student={selectedStudent} 
+                        onClose={() => setSelectedStudent(null)}
+                    />
+                    
+                    {/* Enhanced Export Modal */}
+                    {showExportModal && (
+                        <div className="fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
+                            <div className="modal-content bg-white rounded-xl max-w-md w-full shadow-2xl">
+                                <div className="p-6">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-xl font-bold text-gray-900">Export Student Data</h2>
+                                        <button
+                                            onClick={() => setShowExportModal(false)}
+                                            className="text-gray-400 hover:text-gray-600"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                    
+                                    <p className="text-sm text-gray-600 mb-6">
+                                        Export {filteredStudents.length} student records to CSV format for external analysis.
+                                    </p>
+                                    
+                                    <div className="space-y-3">
+                                        <button
+                                            onClick={handleExport}
+                                            className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-300"
+                                        >
+                                            <Icons.FileText />
+                                            <span className="ml-2">Download CSV File</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setShowExportModal(false)}
+                                            className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+        
+        // Render the admin panel
+        ReactDOM.render(<AdminPanel />, document.getElementById('admin-root'));
+    </script>
+</body>
+</html>
