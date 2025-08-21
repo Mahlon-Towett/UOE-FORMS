@@ -1,12 +1,12 @@
-// form-utilities.js - Form Utilities and Data Management
+// form-utilities.js - Form Utility Functions (FIXED)
 // University of Eldoret Student Form - Utilities Module
 
 /**
- * Handles form utilities including:
- * - Auto-save and restore functionality
- * - Form clearing and reset
+ * Handles utility functions for form operations including:
  * - Checkbox exclusivity management
- * - Data persistence
+ * - Form clearing and resetting
+ * - Auto-save functionality
+ * - Data export/import
  */
 
 window.UoEForm = window.UoEForm || {};
@@ -16,18 +16,14 @@ window.UoEForm.Utilities = {
     // CHECKBOX MANAGEMENT
     // ========================================
     
-    setupCheckboxExclusivity() {
-        const config = window.UoEForm.config;
-        
-        config.checkboxGroups.forEach(groupName => {
-            this.setupCheckboxGroup(groupName);
-        });
-        
-        console.log('✅ Checkbox exclusivity set up for groups:', config.checkboxGroups);
-    },
-    
-    setupCheckboxGroup(groupName) {
+    setupCheckboxExclusivity(groupName) {
         const checkboxes = document.querySelectorAll(`input[name="${groupName}"]`);
+        
+        // Safety check - ensure checkboxes exist
+        if (!checkboxes || checkboxes.length === 0) {
+            console.warn(`⚠️ No checkboxes found for group: ${groupName}`);
+            return;
+        }
         
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
@@ -40,402 +36,387 @@ window.UoEForm.Utilities = {
                 }
             });
         });
+        
+        console.log(`✅ Checkbox exclusivity set up for: ${groupName} (${checkboxes.length} checkboxes)`);
     },
     
     // ========================================
-    // AUTO-SAVE FUNCTIONALITY
+    // FORM MANAGEMENT
     // ========================================
     
-    setupAutoSave() {
-        const form = document.getElementById('studentForm');
-        if (form) {
-            form.addEventListener('input', () => {
-                this.saveFormData();
-            });
-            
-            // Also save on checkbox changes
-            form.addEventListener('change', () => {
-                this.saveFormData();
-            });
-            
-            console.log('✅ Auto-save functionality enabled');
+    clearForm(formId = 'studentForm') {
+        const form = document.getElementById(formId);
+        if (!form) {
+            console.warn(`⚠️ Form not found: ${formId}`);
+            return false;
         }
+        
+        if (confirm('Are you sure you want to clear all form data? This action cannot be undone.')) {
+            form.reset();
+            
+            // Clear validation styling
+            const fields = form.querySelectorAll('.field-input, .location-dropdown, .inline-input');
+            fields.forEach(field => {
+                field.classList.remove('error', 'valid', 'location-error');
+            });
+            
+            // Reset location dropdowns
+            this.resetLocationDropdowns();
+            
+            // Clear localStorage
+            localStorage.removeItem(window.UoEForm.config.localStorageKey);
+            localStorage.removeItem('uoe_student_form');
+            
+            console.log(`✅ Form cleared: ${formId}`);
+            return true;
+        }
+        
+        return false;
     },
     
-    saveFormData() {
-        try {
-            const formData = {};
-            const inputs = document.querySelectorAll('#studentForm input, #studentForm select');
+    resetLocationDropdowns() {
+        const dropdowns = [
+            { id: 'subCounty', message: 'Select county first' },
+            { id: 'constituency', message: 'Select sub-county first' },
+            { id: 'ward', message: 'Select constituency first' }
+        ];
+        
+        dropdowns.forEach(dropdown => {
+            const element = document.getElementById(dropdown.id);
+            if (element) {
+                element.disabled = true;
+                element.innerHTML = `<option value="">${dropdown.message}</option>`;
+                
+                // Update help text
+                const helpText = element.parentElement?.querySelector('.location-help-text');
+                if (helpText) {
+                    helpText.textContent = dropdown.message;
+                    helpText.style.color = '#dc3545';
+                }
+            }
+        });
+    },
+    
+    // ========================================
+    // VALIDATION UTILITIES
+    // ========================================
+    
+    validateField(field) {
+        if (!field) return false;
+        
+        if (field.hasAttribute('required')) {
+            const isValid = field.value.trim() !== '';
             
-            inputs.forEach(input => {
-                if (input.type === 'checkbox') {
+            if (isValid) {
+                field.classList.remove('error');
+                field.classList.add('valid');
+            } else {
+                field.classList.add('error');
+                field.classList.remove('valid');
+            }
+            
+            return isValid;
+        }
+        
+        return true;
+    },
+    
+    validatePhone(phoneNumber) {
+        const phoneRegex = window.UoEForm.constants.PHONE_REGEX;
+        return phoneRegex.test(phoneNumber);
+    },
+    
+    validateEmail(email) {
+        const emailRegex = window.UoEForm.constants.EMAIL_REGEX;
+        return emailRegex.test(email);
+    },
+    
+    validateNationalId(nationalId) {
+        const idRegex = window.UoEForm.constants.NATIONAL_ID_REGEX;
+        return idRegex.test(nationalId);
+    },
+    
+    validateAge(dateOfBirth) {
+        if (!dateOfBirth) return false;
+        
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        
+        const actualAge = (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) 
+            ? age - 1 : age;
+        
+        return actualAge >= window.UoEForm.constants.MIN_AGE && 
+               actualAge <= window.UoEForm.constants.MAX_AGE;
+    },
+    
+    // ========================================
+    // DATA MANAGEMENT
+    // ========================================
+    
+    saveFormData(formId = 'studentForm') {
+        const form = document.getElementById(formId);
+        if (!form) return false;
+        
+        const formData = {};
+        const inputs = form.querySelectorAll('input, select, textarea');
+        
+        inputs.forEach(input => {
+            if (input.id) {
+                if (input.type === 'checkbox' || input.type === 'radio') {
                     formData[input.id] = input.checked;
                 } else {
                     formData[input.id] = input.value;
                 }
+            }
+        });
+        
+        // Add timestamp
+        formData._timestamp = new Date().toISOString();
+        formData._formId = formId;
+        
+        try {
+            localStorage.setItem(`uoe_form_${formId}`, JSON.stringify(formData));
+            console.log(`💾 Form data saved: ${formId}`);
+            return true;
+        } catch (error) {
+            console.warn('Could not save form data:', error);
+            return false;
+        }
+    },
+    
+    loadFormData(formId = 'studentForm') {
+        try {
+            const savedData = localStorage.getItem(`uoe_form_${formId}`);
+            if (!savedData) return false;
+            
+            const formData = JSON.parse(savedData);
+            const form = document.getElementById(formId);
+            
+            if (!form) return false;
+            
+            Object.keys(formData).forEach(fieldId => {
+                if (fieldId.startsWith('_')) return; // Skip metadata
+                
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    if (field.type === 'checkbox' || field.type === 'radio') {
+                        field.checked = formData[fieldId];
+                    } else {
+                        field.value = formData[fieldId];
+                    }
+                }
             });
             
-            localStorage.setItem(window.UoEForm.config.localStorageKey, JSON.stringify(formData));
-            
-            // Show subtle save indicator
-            this.showSaveIndicator();
-            
+            console.log(`📥 Form data loaded: ${formId}`);
+            return true;
         } catch (error) {
-            console.log('Unable to save form data:', error);
+            console.warn('Could not load form data:', error);
+            return false;
         }
     },
     
-    showSaveIndicator() {
-        // Create or update save indicator
-        let indicator = document.getElementById('autoSaveIndicator');
+    exportFormData() {
+        const studentData = this.extractFormData('studentForm');
+        const mediaData = this.extractFormData('mediaConsentForm');
         
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'autoSaveIndicator';
-            indicator.style.cssText = `
-                position: fixed;
-                top: 20px;
-                left: 20px;
-                background: rgba(40, 167, 69, 0.9);
-                color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                z-index: 1000;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-                pointer-events: none;
-            `;
-            indicator.innerHTML = '💾 Auto-saved';
-            document.body.appendChild(indicator);
-        }
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            version: window.UoEForm.config.formVersion,
+            student: studentData,
+            media: mediaData
+        };
         
-        // Show indicator briefly
-        indicator.style.opacity = '1';
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
         
-        setTimeout(() => {
-            indicator.style.opacity = '0';
-        }, 1500);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `uoe_form_export_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        console.log('📤 Form data exported');
     },
     
-    // ========================================
-    // FORM DATA RESTORATION
-    // ========================================
-    
-    loadSavedData() {
-        try {
-            const savedData = localStorage.getItem(window.UoEForm.config.localStorageKey);
-            
-            if (savedData) {
-                const data = JSON.parse(savedData);
-                this.restoreFormData(data);
-                this.showDataRestoredNotification();
-                console.log('✅ Saved form data restored');
-            }
-            
-        } catch (error) {
-            console.log('Unable to load saved data:', error);
-        }
-    },
-    
-    restoreFormData(data) {
-        Object.keys(data).forEach(key => {
-            const field = document.getElementById(key);
-            if (field) {
-                if (field.type === 'checkbox') {
-                    field.checked = data[key] === true;
+    extractFormData(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return {};
+        
+        const data = {};
+        const inputs = form.querySelectorAll('input, select, textarea');
+        
+        inputs.forEach(input => {
+            if (input.id) {
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    data[input.id] = input.checked;
                 } else {
-                    field.value = data[key] || '';
+                    data[input.id] = input.value;
                 }
             }
         });
         
-        // Trigger location cascade if county was saved
-        this.triggerLocationCascade(data);
+        return data;
     },
     
-    triggerLocationCascade(data) {
-        if (data.county && window.UoEForm.LocationManager) {
-            setTimeout(() => {
-                window.UoEForm.LocationManager.handleCountyChange();
-                
-                if (data.subCounty) {
-                    setTimeout(() => {
-                        const subCountySelect = document.getElementById('subCounty');
-                        if (subCountySelect) {
-                            subCountySelect.value = data.subCounty;
-                            window.UoEForm.LocationManager.handleSubCountyChange();
-                            
-                            if (data.constituency) {
-                                setTimeout(() => {
-                                    const constituencySelect = document.getElementById('constituency');
-                                    if (constituencySelect) {
-                                        constituencySelect.value = data.constituency;
-                                        window.UoEForm.LocationManager.handleConstituencyChange();
-                                        
-                                        if (data.ward) {
-                                            setTimeout(() => {
-                                                const wardSelect = document.getElementById('ward');
-                                                if (wardSelect) {
-                                                    wardSelect.value = data.ward;
-                                                }
-                                            }, 300);
-                                        }
-                                    }
-                                }, 300);
-                            }
-                        }
-                    }, 300);
-                }
-            }, 800); // Wait for location data to load
+    // ========================================
+    // UI UTILITIES
+    // ========================================
+    
+    showLoading(message = 'Processing...') {
+        const overlay = document.getElementById('loadingOverlay');
+        const text = document.getElementById('loadingText');
+        
+        if (overlay) {
+            overlay.style.display = 'flex';
+        }
+        
+        if (text) {
+            text.textContent = message;
         }
     },
     
-    showDataRestoredNotification() {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
+    hideLoading() {
+        const overlay = document.getElementById('loadingOverlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    },
+    
+    showMessage(message, type = 'info', duration = 5000) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message message-${type}`;
+        messageDiv.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
-            background: rgba(13, 110, 253, 0.95);
-            color: white;
             padding: 15px 20px;
             border-radius: 8px;
-            font-size: 14px;
-            z-index: 10001;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            font-weight: bold;
             max-width: 300px;
-        `;
-        notification.innerHTML = `
-            <strong>📋 Data Restored</strong><br>
-            <small>Your previously entered information has been restored.</small>
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         `;
         
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-        }, 4000);
-    },
-    
-    // ========================================
-    // FORM CLEARING
-    // ========================================
-    
-    clearForm() {
-        if (!confirm('Are you sure you want to clear all form data? This action cannot be undone.')) {
-            return;
-        }
-        
-        // Reset the form
-        const form = document.getElementById('studentForm');
-        if (form) {
-            form.reset();
-        }
-        
-        // Clear validation classes
-        document.querySelectorAll('.field-input, .location-dropdown').forEach(field => {
-            window.UoEForm.Validator.clearFieldValidation(field);
-        });
-        
-        // Reset location dropdowns
-        this.resetLocationDropdowns();
-        
-        // Clear consent checkboxes
-        this.clearConsentCheckboxes();
-        
-        // Clear success message
-        this.clearSuccessMessage();
-        
-        // Clear saved data
-        localStorage.removeItem(window.UoEForm.config.localStorageKey);
-        
-        // Scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        this.showFormClearedNotification();
-        
-        console.log('✅ Form cleared successfully');
-    },
-    
-    resetLocationDropdowns() {
-        if (window.UoEForm.LocationManager) {
-            const subCountySelect = document.getElementById('subCounty');
-            const constituencySelect = document.getElementById('constituency');
-            const wardSelect = document.getElementById('ward');
-            
-            if (subCountySelect) {
-                window.UoEForm.LocationManager.resetDropdown(subCountySelect, 'Select county first');
-            }
-            if (constituencySelect) {
-                window.UoEForm.LocationManager.resetDropdown(constituencySelect, 'Select sub-county first');
-            }
-            if (wardSelect) {
-                window.UoEForm.LocationManager.resetDropdown(wardSelect, 'Select constituency first');
-            }
-        }
-    },
-    
-    clearConsentCheckboxes() {
-        const dataConsent = document.getElementById('dataConsent');
-        const dataRights = document.getElementById('dataRights');
-        
-        if (dataConsent) dataConsent.checked = false;
-        if (dataRights) dataRights.checked = false;
-    },
-    
-    clearSuccessMessage() {
-        const successMessage = document.getElementById('successMessage');
-        if (successMessage) {
-            successMessage.style.display = 'none';
-        }
-    },
-    
-    showFormClearedNotification() {
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(220, 53, 69, 0.95);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 8px;
-            font-size: 14px;
-            z-index: 10001;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        `;
-        notification.innerHTML = `
-            <strong>🗑️ Form Cleared</strong><br>
-            <small>All data has been removed.</small>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                document.body.removeChild(notification);
-            }
-        }, 3000);
-    },
-    
-    // ========================================
-    // FORM ENHANCEMENT
-    // ========================================
-    
-    enhanceFormInteractivity() {
-        // Store original help text for location fields
-        document.querySelectorAll('.location-help-text').forEach(text => {
-            text.setAttribute('data-original-text', text.textContent);
-        });
-        
-        // Ensure pre-submission section is visible
-        const preSubmissionSection = document.querySelector('.pre-submission-section');
-        if (preSubmissionSection) {
-            preSubmissionSection.style.display = 'block';
-            preSubmissionSection.style.visibility = 'visible';
-            preSubmissionSection.style.opacity = '1';
-        }
-        
-        // Add dynamic field counting
-        this.setupFieldCounter();
-        
-        console.log('✅ Form interactivity enhanced');
-    },
-    
-    setupFieldCounter() {
-        const form = document.getElementById('studentForm');
-        if (!form) return;
-        
-        const updateFieldCounter = () => {
-            const allFields = form.querySelectorAll('input, select');
-            const filledFields = Array.from(allFields).filter(field => {
-                if (field.type === 'checkbox') {
-                    return field.checked;
-                }
-                return field.value && field.value.trim() !== '';
-            });
-            
-            const percentage = Math.round((filledFields.length / allFields.length) * 100);
-            this.updateProgressIndicator(percentage, filledFields.length, allFields.length);
+        const colors = {
+            success: { bg: '#d4edda', color: '#155724', border: '#c3e6cb' },
+            error: { bg: '#f8d7da', color: '#721c24', border: '#f5c6cb' },
+            warning: { bg: '#fff3cd', color: '#856404', border: '#ffeaa7' },
+            info: { bg: '#d1ecf1', color: '#0c5460', border: '#b8e6f1' }
         };
         
-        form.addEventListener('input', updateFieldCounter);
-        form.addEventListener('change', updateFieldCounter);
+        const style = colors[type] || colors.info;
+        messageDiv.style.backgroundColor = style.bg;
+        messageDiv.style.color = style.color;
+        messageDiv.style.border = `1px solid ${style.border}`;
+        messageDiv.textContent = message;
         
-        // Initial count
-        setTimeout(updateFieldCounter, 1000);
+        document.body.appendChild(messageDiv);
+        
+        setTimeout(() => {
+            if (document.body.contains(messageDiv)) {
+                document.body.removeChild(messageDiv);
+            }
+        }, duration);
     },
     
-    updateProgressIndicator(percentage, filled, total) {
-        let indicator = document.getElementById('formProgressIndicator');
-        
-        if (!indicator) {
-            indicator = document.createElement('div');
-            indicator.id = 'formProgressIndicator';
-            indicator.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                left: 20px;
-                background: rgba(255, 255, 255, 0.95);
-                border: 2px solid #2a5298;
-                border-radius: 8px;
-                padding: 10px 15px;
-                font-size: 12px;
-                z-index: 1000;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                min-width: 200px;
-            `;
-            document.body.appendChild(indicator);
+    scrollToElement(elementId, behavior = 'smooth') {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.scrollIntoView({ behavior, block: 'center' });
+            return true;
         }
-        
-        const color = percentage < 50 ? '#dc3545' : percentage < 80 ? '#ffc107' : '#28a745';
-        
-        indicator.innerHTML = `
-            <div style="margin-bottom: 5px; font-weight: bold; color: ${color};">
-                Form Progress: ${percentage}%
-            </div>
-            <div style="background: #e9ecef; height: 6px; border-radius: 3px; overflow: hidden;">
-                <div style="background: ${color}; height: 100%; width: ${percentage}%; transition: width 0.3s ease;"></div>
-            </div>
-            <div style="margin-top: 5px; font-size: 11px; color: #666;">
-                ${filled} of ${total} fields completed
-            </div>
-        `;
+        return false;
     },
     
     // ========================================
-    // DATA VALIDATION HELPERS
+    // PRINT UTILITIES
     // ========================================
     
-    formatPhoneNumber(input) {
-        // Auto-format Kenyan phone numbers
-        let value = input.value.replace(/\D/g, '');
+    generateFileName(baseName, studentName = '', admissionNumber = '') {
+        const name = studentName.replace(/[^a-zA-Z0-9]/g, '_') || 'Student';
+        const admission = admissionNumber.replace(/[^a-zA-Z0-9]/g, '_') || '';
+        const timestamp = new Date().toISOString().split('T')[0];
         
-        if (value.startsWith('254')) {
-            value = '+' + value;
-        } else if (value.startsWith('0')) {
-            value = '+254' + value.substring(1);
-        } else if (value.length === 9) {
-            value = '+254' + value;
-        }
-        
-        input.value = value;
+        return `UoE_${baseName}_${name}_${admission}_${timestamp}.pdf`;
     },
     
-    setupPhoneFormatting() {
-        const phoneFields = ['phoneNumber', 'fatherPhone', 'motherPhone', 'emergency1Phone', 'emergency2Phone'];
+    optimizeForPrint() {
+        // Hide web-only elements
+        const elementsToHide = document.querySelectorAll(`
+            .form-navigation,
+            .form-actions, 
+            .success-message,
+            .important-instructions,
+            .data-protection-section,
+            .loading-overlay
+        `);
         
-        phoneFields.forEach(fieldId => {
-            const field = document.getElementById(fieldId);
-            if (field) {
-                field.addEventListener('blur', () => {
-                    this.formatPhoneNumber(field);
-                });
+        elementsToHide.forEach(el => {
+            if (el) {
+                el.style.display = 'none';
             }
         });
+        
+        // Optimize input styling for print
+        const inputs = document.querySelectorAll('.field-input, .location-dropdown, .inline-input');
+        inputs.forEach(input => {
+            input.classList.remove('error', 'valid', 'location-error');
+            input.style.webkitBoxShadow = '0 0 0 30px white inset';
+            input.style.boxShadow = '0 0 0 30px white inset';
+            input.style.background = 'white';
+            input.style.color = 'black';
+            input.style.borderBottom = '1px solid #000';
+        });
+        
+        return elementsToHide;
+    },
+    
+    restoreAfterPrint(hiddenElements) {
+        // Restore hidden elements
+        hiddenElements.forEach(el => {
+            if (el) {
+                el.style.display = '';
+            }
+        });
+        
+        // Restore input styling
+        const inputs = document.querySelectorAll('.field-input, .location-dropdown, .inline-input');
+        inputs.forEach(input => {
+            input.style.webkitBoxShadow = '';
+            input.style.boxShadow = '';
+            input.style.background = '';
+            input.style.color = '';
+        });
+    },
+    
+    // ========================================
+    // PERFORMANCE UTILITIES
+    // ========================================
+    
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+    
+    throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
     },
     
     // ========================================
@@ -445,29 +426,59 @@ window.UoEForm.Utilities = {
     initialize() {
         console.log('🔧 Initializing Form Utilities...');
         
-        this.setupCheckboxExclusivity();
-        this.setupAutoSave();
-        this.enhanceFormInteractivity();
-        this.setupPhoneFormatting();
+        // Setup checkbox exclusivity for known groups
+        const checkboxGroups = window.UoEForm.config?.checkboxGroups || ['maritalStatus', 'fatherStatus', 'motherStatus'];
         
-        // Load saved data after a brief delay to allow other modules to initialize
-        setTimeout(() => {
-            this.loadSavedData();
-        }, 500);
+        checkboxGroups.forEach(groupName => {
+            this.setupCheckboxExclusivity(groupName);
+        });
+        
+        // Setup auto-save if enabled
+        if (window.UoEForm.features?.enableAutoSave) {
+            this.setupAutoSave();
+        }
         
         console.log('✅ Form Utilities initialized');
     },
     
-    // ========================================
-    // PUBLIC INTERFACE
-    // ========================================
-    
-    clear() {
-        this.clearForm();
-    },
-    
-    save() {
-        this.saveFormData();
+    setupAutoSave() {
+        const autoSaveInterval = window.UoEForm.constants?.AUTO_SAVE_INTERVAL || 30000;
+        
+        // Auto-save for student form
+        const studentForm = document.getElementById('studentForm');
+        if (studentForm) {
+            const debouncedSave = this.debounce(() => {
+                this.saveFormData('studentForm');
+            }, 1000);
+            
+            studentForm.addEventListener('input', debouncedSave);
+            studentForm.addEventListener('change', debouncedSave);
+        }
+        
+        // Auto-save for media form
+        const mediaForm = document.getElementById('mediaConsentForm');
+        if (mediaForm) {
+            const debouncedSave = this.debounce(() => {
+                this.saveFormData('mediaConsentForm');
+            }, 1000);
+            
+            mediaForm.addEventListener('input', debouncedSave);
+            mediaForm.addEventListener('change', debouncedSave);
+        }
+        
+        // Periodic save
+        setInterval(() => {
+            this.saveFormData('studentForm');
+            this.saveFormData('mediaConsentForm');
+        }, autoSaveInterval);
+        
+        // Save on page unload
+        window.addEventListener('beforeunload', () => {
+            this.saveFormData('studentForm');
+            this.saveFormData('mediaConsentForm');
+        });
+        
+        console.log('💾 Auto-save enabled');
     }
 };
 

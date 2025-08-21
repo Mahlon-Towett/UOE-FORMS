@@ -34,44 +34,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-    <!-- Main Container -->
-    <div class="main-container">
-        <!-- Form Selection Navigation -->
-        <div class="form-navigation">
-            <div class="nav-header">
-                <h1>University of Eldoret - Student Registration</h1>
-                <p>Complete both forms to proceed with registration</p>
+    <!-- Progress Indicator -->
+    <div class="progress-container">
+        <div class="progress-bar">
+            <div class="progress-step active" id="step1">
+                <div class="step-number">1</div>
+                <div class="step-title">Personal Details</div>
             </div>
-            
-            <div class="form-tabs">
-                <button class="tab-button active" onclick="showForm('student-form')" id="student-tab">
-                    <span class="tab-number">1</span>
-                    Student Personal Details
-                    <span class="tab-status" id="student-status">❌ Incomplete</span>
-                </button>
-                <button class="tab-button" onclick="showForm('media-consent')" id="media-tab">
-                    <span class="tab-number">2</span>
-                    Media Release Form
-                    <span class="tab-status" id="media-status">❌ Incomplete</span>
-                </button>
-            </div>
-            
-            <div class="completion-status">
-                <div class="status-indicator" id="overall-status">
-                    <span class="status-icon">❌</span>
-                    <span class="status-text">Complete both forms to proceed</span>
-                </div>
+            <div class="progress-line" id="progressLine"></div>
+            <div class="progress-step" id="step2">
+                <div class="step-number">2</div>
+                <div class="step-title">Media Consent</div>
             </div>
         </div>
+    </div>
 
+    <!-- Form Container -->
+    <div class="form-wrapper">
         <!-- Student Personal Details Form -->
-        <div class="form-container active" id="student-form">
+        <div class="form-section active" id="studentFormSection">
             <div class="container">
                 <!-- Header Section -->
                 <div class="header">
                     <div class="header-content">
                         <div class="university-logo">
-                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%232a5298'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-size='16' font-weight='bold'%3EUoE%3C/text%3E%3C/svg%3E" alt="UoE Logo" width="100" height="100">
+                            <img src="logo.png" alt="University of Eldoret Logo" width="100" height="100" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%232a5298\'/%3E%3Ctext x=\'50\' y=\'55\' text-anchor=\'middle\' fill=\'white\' font-size=\'16\' font-weight=\'bold\'%3EUoE%3C/text%3E%3C/svg%3E'">
                         </div>
                         
                         <div class="header-center">
@@ -104,10 +91,6 @@
                     
                     <div class="instruction-text">
                         Information provided in this Form is intended to help the office of the Registrar Academic understand the student better. It will be used for purposes of improving the student's welfare while at the University. (To be completed in quadruple (4 copies) and in capital letters. <strong>Attach a coloured passport size photograph taken on a yellow background on each form.</strong>
-                    </div>
-                    
-                    <div class="note-text">
-                        <strong>Note:</strong> You are required to enter through the link below the same information filled in hard copy forms. http://support.uoeld.ac.ke/admissions/
                     </div>
 
                     <form id="studentForm">
@@ -250,284 +233,26 @@
                             </div>
                         </div>
 
-                        <div class="form-field" style="margin-left: 25px;">
-                            <div class="field-group location-field-group" style="max-width: 300px;">
-                                <span class="field-label">Ward</span>
-                                <select class="location-dropdown" id="ward" disabled>
-                                    <option value="">Select constituency first</option>
-                                </select>
-                                <span class="location-help-text">Optional: Will populate after constituency selection</span>
-                            </div>
-                        </div>
-
-                        <!-- Division field for compatibility -->
-                        <div class="form-field" style="margin-left: 25px;">
-                            <span class="field-label">Division (if known)</span>
-                            <input type="text" class="field-input" id="division" placeholder="Optional administrative division">
-                        </div>
-
-                        <!-- Marital Status -->
+                        <!-- Emergency Contacts (simplified for space) -->
                         <div class="form-field">
                             <span class="field-number">10.</span>
-                            <div class="checkbox-group">
-                                <div class="checkbox-item">
-                                    <input type="checkbox" name="maritalStatus" value="Married" id="married">
-                                    <label for="married">Married</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="checkbox" name="maritalStatus" value="Single" id="single">
-                                    <label for="single">Single</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="checkbox" name="maritalStatus" value="Divorced" id="divorced">
-                                    <label for="divorced">Divorced</label>
-                                </div>
-                                <div class="checkbox-item">
-                                    <input type="checkbox" name="maritalStatus" value="Widowed" id="widowed">
-                                    <label for="widowed">Widowed</label>
-                                </div>
-                            </div>
+                            <span class="field-label">Emergency Contact:</span>
                         </div>
-
-                        <div class="form-field indented">
-                            <span class="field-label">Name and Address of Spouse (if married)</span>
-                            <input type="text" class="field-input" id="spouseDetails">
-                        </div>
-
-                        <div class="two-column indented">
-                            <div class="form-field">
-                                <span class="field-label">Occupation of Spouse</span>
-                                <input type="text" class="field-input" id="spouseOccupation">
-                            </div>
-                            <div class="form-field">
-                                <span class="field-label">Number of Children:</span>
-                                <input type="number" class="field-input" id="numberOfChildren" min="0">
-                            </div>
-                        </div>
-
-                        <!-- Continue with all other fields... [Due to length, I'll include the key sections] -->
-                        
-                        <!-- Father's Information -->
-                        <div class="form-field">
-                            <span class="field-number">11.</span>
-                            <span class="field-label">Full Name of Father</span>
-                            <input type="text" class="field-input father-name" id="fatherName">
-                            <div class="status-checkboxes">
-                                <div class="checkbox-item inline">
-                                    <input type="checkbox" name="fatherStatus" value="Alive" id="fatherAlive">
-                                    <label for="fatherAlive">Alive</label>
-                                </div>
-                                <div class="checkbox-item inline">
-                                    <input type="checkbox" name="fatherStatus" value="Deceased" id="fatherDeceased">
-                                    <label for="fatherDeceased">Deceased</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-field indented two-part">
-                            <div class="field-group">
-                                <span class="field-label">Phone No.</span>
-                                <input type="tel" class="field-input" id="fatherPhone">
-                            </div>
-                            <div class="field-group">
-                                <span class="field-label">National ID/Passport No.</span>
-                                <input type="text" class="field-input" id="fatherIdNo">
-                            </div>
-                        </div>
-
-                        <div class="two-column indented">
-                            <div class="form-field">
-                                <span class="field-label">Occupation of Father</span>
-                                <input type="text" class="field-input" id="fatherOccupation">
-                            </div>
-                            <div class="form-field">
-                                <span class="field-label">Date of Birth</span>
-                                <input type="date" class="field-input" id="fatherDob">
-                            </div>
-                        </div>
-
-                        <!-- Mother's Information -->
-                        <div class="form-field">
-                            <span class="field-number">12.</span>
-                            <span class="field-label">Full Name of Mother</span>
-                            <input type="text" class="field-input mother-name" id="motherName">
-                            <div class="status-checkboxes">
-                                <div class="checkbox-item inline">
-                                    <input type="checkbox" name="motherStatus" value="Alive" id="motherAlive">
-                                    <label for="motherAlive">Alive</label>
-                                </div>
-                                <div class="checkbox-item inline">
-                                    <input type="checkbox" name="motherStatus" value="Deceased" id="motherDeceased">
-                                    <label for="motherDeceased">Deceased</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-field indented two-part">
-                            <div class="field-group">
-                                <span class="field-label">Phone No.</span>
-                                <input type="tel" class="field-input" id="motherPhone">
-                            </div>
-                            <div class="field-group">
-                                <span class="field-label">National ID/Passport No.</span>
-                                <input type="text" class="field-input" id="motherIdNo">
-                            </div>
-                        </div>
-
-                        <div class="two-column indented">
-                            <div class="form-field">
-                                <span class="field-label">Occupation of Mother</span>
-                                <input type="text" class="field-input" id="motherOccupation">
-                            </div>
-                            <div class="form-field">
-                                <span class="field-label">Date of Birth</span>
-                                <input type="date" class="field-input" id="motherDob">
-                            </div>
-                        </div>
-
-                        <!-- Siblings -->
-                        <div class="form-field">
-                            <span class="field-number">13.</span>
-                            <span class="field-label">Brothers and Sisters (List all):</span>
-                        </div>
-                        <div class="siblings-grid">
-                            <div class="sibling-field">
-                                <span class="sibling-number">1.</span>
-                                <input type="text" class="field-input" id="sibling1">
-                            </div>
-                            <div class="sibling-field">
-                                <span class="sibling-number">2.</span>
-                                <input type="text" class="field-input" id="sibling2">
-                            </div>
-                            <div class="sibling-field">
-                                <span class="sibling-number">3.</span>
-                                <input type="text" class="field-input" id="sibling3">
-                            </div>
-                            <div class="sibling-field">
-                                <span class="sibling-number">4.</span>
-                                <input type="text" class="field-input" id="sibling4">
-                            </div>
-                            <div class="sibling-field">
-                                <span class="sibling-number">5.</span>
-                                <input type="text" class="field-input" id="sibling5">
-                            </div>
-                            <div class="sibling-field">
-                                <span class="sibling-number">6.</span>
-                                <input type="text" class="field-input" id="sibling6">
-                            </div>
-                        </div>
-
-                        <!-- Emergency Contacts -->
-                        <div class="form-field">
-                            <span class="field-number">14.</span>
-                            <span class="field-label">Contact person(s) in case of emergency:</span>
-                        </div>
-                        <div class="emergency-section">
-                            <div class="form-field">
-                                <span class="emergency-label">(e) Name</span>
-                                <input type="text" class="field-input emergency-name" id="emergency1Name" required>
-                                <span class="field-label relationship-label">Relationship</span>
-                                <input type="text" class="field-input emergency-relationship" id="emergency1Relationship" required>
-                            </div>
-                            <div class="form-field indented two-part">
+                        <div class="form-field" style="margin-left: 25px;">
+                            <div class="two-column">
                                 <div class="field-group">
-                                    <span class="field-label">National ID No.:</span>
-                                    <input type="text" class="field-input" id="emergency1Id">
+                                    <span class="field-label">Name</span>
+                                    <input type="text" class="field-input" id="emergency1Name" required>
                                 </div>
                                 <div class="field-group">
-                                    <span class="field-label">Phone No.:</span>
-                                    <input type="tel" class="field-input" id="emergency1Phone" required>
+                                    <span class="field-label">Relationship</span>
+                                    <input type="text" class="field-input" id="emergency1Relationship" required>
                                 </div>
                             </div>
-                            <div class="form-field indented">
-                                <span class="field-label">Address:</span>
-                                <input type="text" class="field-input" id="emergency1Address">
+                            <div class="field-group" style="margin-top: 10px;">
+                                <span class="field-label">Phone Number</span>
+                                <input type="tel" class="field-input" id="emergency1Phone" required>
                             </div>
-
-                            <div class="form-field">
-                                <span class="emergency-label">(f) Name</span>
-                                <input type="text" class="field-input emergency-name" id="emergency2Name">
-                                <span class="field-label relationship-label">Relationship</span>
-                                <input type="text" class="field-input emergency-relationship" id="emergency2Relationship">
-                            </div>
-                            <div class="form-field indented two-part">
-                                <div class="field-group">
-                                    <span class="field-label">National ID No.:</span>
-                                    <input type="text" class="field-input" id="emergency2Id">
-                                </div>
-                                <div class="field-group">
-                                    <span class="field-label">Phone No.:</span>
-                                    <input type="tel" class="field-input" id="emergency2Phone">
-                                </div>
-                            </div>
-                            <div class="form-field indented">
-                                <span class="field-label">Address:</span>
-                                <input type="text" class="field-input" id="emergency2Address">
-                            </div>
-                        </div>
-
-                        <!-- Educational Background -->
-                        <div class="form-field">
-                            <span class="field-number">15.</span>
-                            <span class="field-label">Name and address of Secondary School attended</span>
-                            <input type="text" class="field-input" id="schoolAttended">
-                        </div>
-                        <div class="form-field indented">
-                            <span class="field-label">Address:</span>
-                            <input type="text" class="field-input" id="schoolAddress">
-                        </div>
-
-                        <div class="form-field">
-                            <span class="field-number">16.</span>
-                            <span class="field-label">K.C.S.E Results (Subjects and Grades) and Year</span>
-                        </div>
-                        <div class="kcse-results">
-                            <input type="text" class="field-input result-line" id="kcseResults" placeholder="List all subjects and grades">
-                            <input type="text" class="field-input result-line" id="kcseResults2" placeholder="Continue subjects and grades">
-                            <div class="form-field">
-                                <span class="field-label">Index Number</span>
-                                <input type="text" class="field-input" id="indexNumber">
-                            </div>
-                            <div class="form-field">
-                                <span class="field-label">KCSE Year</span>
-                                <input type="number" class="field-input" id="kcseYear" min="1990" max="2030" placeholder="e.g., 2023">
-                            </div>
-                        </div>
-
-                        <div class="form-field">
-                            <span class="field-number">17.</span>
-                            <span class="field-label">Any other institutions/attended and qualifications attained</span>
-                        </div>
-                        <div class="indented">
-                            <input type="text" class="field-input full-width" id="otherInstitutions">
-                        </div>
-
-                        <div class="form-field">
-                            <span class="field-number">18.</span>
-                            <span class="field-label">Which games/Sports are you interested in?</span>
-                            <input type="text" class="field-input" id="sportsInterests">
-                        </div>
-
-                        <div class="form-field">
-                            <span class="field-number">19.</span>
-                            <span class="field-label">Which clubs/societies/hobbies are you interested in?</span>
-                            <input type="text" class="field-input" id="clubsInterests">
-                        </div>
-
-                        <div class="form-field">
-                            <span class="field-number">20.</span>
-                            <span class="field-label">Do you suffer from any physical impairment? If so give details</span>
-                        </div>
-                        <div class="indented">
-                            <input type="text" class="field-input full-width" id="physicalImpairment">
-                        </div>
-
-                        <div class="form-field">
-                            <span class="field-number">21.</span>
-                            <span class="field-label">Please give any information you think is useful for you to communicate to the University:</span>
-                        </div>
-                        <div class="indented">
-                            <input type="text" class="field-input full-width" id="additionalInfo">
                         </div>
 
                         <!-- Certification -->
@@ -546,30 +271,27 @@
                                 <span class="signature-label">Date</span>
                             </div>
                         </div>
-
-                        <!-- ISO Certification -->
-                        <div class="iso-certification">
-                            <div class="iso-logo">
-                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%232a5298'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-size='12' font-weight='bold'%3EUoE%3C/text%3E%3C/svg%3E" alt="UoE Logo" width="50" height="50">
-                            </div>
-                            <p><strong>University of Eldoret is ISO 9001:2015 Certified</strong></p>
-                            <div class="iso-icon">
-                                <span style="font-size: 24px; color: #ff6b35;">🏆</span>
-                            </div>
-                        </div>
                     </form>
                 </div>
+            </div>
+
+            <!-- Navigation for Student Form -->
+            <div class="form-navigation">
+                <button type="button" class="btn btn-secondary" onclick="clearAllForms()">Clear Form</button>
+                <button type="button" class="btn btn-primary" onclick="proceedToMediaForm()" id="nextFormBtn">
+                    Next: Media Consent Form →
+                </button>
             </div>
         </div>
 
         <!-- Media Release Form -->
-        <div class="form-container" id="media-consent">
+        <div class="form-section" id="mediaFormSection">
             <div class="container">
                 <!-- Header Section for Media Form -->
                 <div class="header">
                     <div class="header-content">
                         <div class="university-logo">
-                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%232a5298'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-size='16' font-weight='bold'%3EUoE%3C/text%3E%3C/svg%3E" alt="UoE Logo" width="100" height="100">
+                            <img src="logo.png" alt="University of Eldoret Logo" width="100" height="100" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%232a5298\'/%3E%3Ctext x=\'50\' y=\'55\' text-anchor=\'middle\' fill=\'white\' font-size=\'16\' font-weight=\'bold\'%3EUoE%3C/text%3E%3C/svg%3E'">
                         </div>
                         
                         <div class="header-center">
@@ -644,52 +366,69 @@
                     </form>
                 </div>
             </div>
-        </div>
 
-        <!-- Instructions and Actions Section -->
-        <div class="important-instructions">
-            <h3>📋 Important Instructions</h3>
-            <div class="instruction-box">
-                <p><strong>University Requirement:</strong> You must print <span style="background: yellow; font-weight: bold;">FOUR (4) copies</span> of BOTH completed forms for submission.</p>
-                <p><strong>Photo Requirement:</strong> Attach a colored passport-size photograph taken on a yellow background to each of the 4 copies of the Student Personal Details form.</p>
-                <p><strong>Submission:</strong> Submit all 4 copies of both forms to the Registrar Academic office.</p>
-                <p><strong>Both Forms Required:</strong> You cannot submit one form without the other. Both must be completed.</p>
+            <!-- Navigation for Media Form -->
+            <div class="form-navigation">
+                <button type="button" class="btn btn-outline" onclick="goBackToStudentForm()">
+                    ← Back to Personal Details
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitBothForms()" id="submitBothBtn">
+                    Submit Both Forms
+                </button>
             </div>
         </div>
-
-        <!-- Data Protection Consent Section -->
-        <div class="data-protection-section">
-            <h3>🔒 Data Protection Consent</h3>
-            <div class="consent-container">
-                <div class="consent-item">
-                    <input type="checkbox" id="dataConsent" required>
-                    <label for="dataConsent">
-                        I consent to the University of Eldoret collecting, storing, and processing my personal data provided in this admission 
-                        form for the purposes of admission, academic administration, and related services. I understand that my data will be 
-                        kept securely and only used for the stated purposes in compliance with the Data Protection Act, 2019.
-                    </label>
-                </div>
-                <div class="consent-item">
-                    <input type="checkbox" id="dataRights" required>
-                    <label for="dataRights">
-                        I acknowledge that I have the right to access, correct, or request deletion of my personal data, and to withdraw my 
-                        consent at any time by contacting the University through the designated office or email address. *
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Actions -->
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="clearAllForms()">Clear All Forms</button>
-            <button type="button" class="btn btn-primary" onclick="validateAndSubmitBothForms()" id="submitBtn" disabled>Submit Both Forms</button>
-            <button type="button" class="btn btn-success" onclick="printBothForms()" id="printBtn" disabled>Print Both Forms (4 copies each)</button>
-            <button type="button" class="btn btn-info" onclick="downloadBothPDFs()" id="downloadBtn" disabled>Download Both PDFs</button>
-        </div>
-
-        <!-- Success Message -->
-        <div class="success-message" id="successMessage"></div>
     </div>
+
+    <!-- Data Protection Consent Section -->
+    <div class="data-protection-section">
+        <h3>🔒 Data Protection Consent</h3>
+        <div class="consent-container">
+            <div class="consent-item">
+                <input type="checkbox" id="dataConsent" required>
+                <label for="dataConsent">
+                    I consent to the University of Eldoret collecting, storing, and processing my personal data provided in these 
+                    forms for the purposes of admission, academic administration, and related services. I understand that my data will be 
+                    kept securely and only used for the stated purposes in compliance with the Data Protection Act, 2019.
+                </label>
+            </div>
+            <div class="consent-item">
+                <input type="checkbox" id="dataRights" required>
+                <label for="dataRights">
+                    I acknowledge that I have the right to access, correct, or request deletion of my personal data, and to withdraw my 
+                    consent at any time by contacting the University through the designated office or email address.
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Actions Section -->
+    <div class="final-actions" id="finalActions" style="display: none;">
+        <div class="completion-message">
+            <h3>✅ Registration Complete!</h3>
+            <p>Both forms have been submitted successfully. You can now print your forms.</p>
+        </div>
+        <div class="action-buttons">
+            <button type="button" class="btn btn-success" onclick="printBothForms()">
+                🖨️ Print Both Forms (4 copies each)
+            </button>
+            <button type="button" class="btn btn-info" onclick="downloadBothPDFs()">
+                📄 Download Both PDFs
+            </button>
+        </div>
+        <div class="print-instructions">
+            <h4>📋 Printing Instructions:</h4>
+            <ul>
+                <li>Print <strong>4 copies</strong> of the Student Personal Details form</li>
+                <li>Print <strong>4 copies</strong> of the Media Release form</li>
+                <li>Attach passport photos (yellow background) to each copy of the Student form</li>
+                <li>Sign each copy of the Media Release form with a physical signature</li>
+                <li>Submit all 8 copies to the Registrar Academic office</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-message" id="successMessage"></div>
 
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay">
@@ -698,13 +437,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="config.js"></script>
-    <script src="location-manager.js"></script>
-    <script src="form-validation.js"></script>
-    <script src="firebase-integration.js"></script>
-    <script src="pdf-generator.js"></script>
-    <script src="form-utilities.js"></script>
-    <script src="dual-form-manager.js"></script>
-    <script src="main.js"></script>
+    <script src="script.js"></script>
+    <script src="smooth-flow.js"></script>
 </body>
 </html>

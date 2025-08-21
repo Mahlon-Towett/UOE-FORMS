@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University of Eldoret - Media Release Form</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+        import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQ4B3CdAJ4WoFu-bPlZQtLgdpHvkXTK0w",
+            authDomain: "uoe-student-form.firebaseapp.com",
+            projectId: "uoe-student-form",
+            storageBucket: "uoe-student-form.firebasestorage.app",
+            messagingSenderId: "1023597600972",
+            appId: "1:1023597600972:web:4a79cca07365059d392269",
+            measurementId: "G-HS1FV2ZS80"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        window.analytics = getAnalytics(app);
+        
+        console.log('✅ Firebase initialized successfully');
+    </script>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section for Media Form -->
+        <div class="header">
+            <div class="header-content">
+                <div class="university-logo">
+                    <img src="logo.png" alt="University of Eldoret Logo" width="100" height="100" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 100\'%3E%3Ccircle cx=\'50\' cy=\'50\' r=\'45\' fill=\'%232a5298\'/%3E%3Ctext x=\'50\' y=\'55\' text-anchor=\'middle\' fill=\'white\' font-size=\'16\' font-weight=\'bold\'%3EUoE%3C/text%3E%3C/svg%3E'">
+                </div>
+                
+                <div class="header-center">
+                    <h1>University of Eldoret</h1>
+                    <p class="tagline">Excellence in Innovation and Development</p>
+                </div>
+                
+                <div class="contact-info">
+                    <p><strong>UoE/FM/033</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Media Release Form Content -->
+        <div class="form-content">
+            <div class="release-form-header">
+                <div class="form-number-box">
+                    <span class="form-arrow">▶</span>
+                    <span class="form-title-text">RELEASE FORM</span>
+                </div>
+            </div>
+
+            <form id="mediaConsentForm">
+                <div class="release-content">
+                    <p class="release-paragraph">
+                        I, <span class="fill-field"><input type="text" class="inline-input" id="mediaFullName" placeholder="Enter your full name" required></span> of ID No. <span class="fill-field"><input type="text" class="inline-input" id="mediaIdNumber" placeholder="Enter ID number" required></span> hereby 
+                        grant consent to the University of <u>Eldoret</u> and its Legal representatives, successors, 
+                        assigns, agents and employees the irrevocable and unrestricted right to use and 
+                        reproduce photographs and or video images taken of me for the purpose of 
+                        publication, promotion advertising or trade, in any manner or medium.
+                    </p>
+
+                    <p class="release-paragraph">
+                        I agree that the photographs/videos shall thereof constitute sole property of the 
+                        University of <u>Eldoret</u> with <u>full right of disposition in any manner whatsoever</u>.
+                    </p>
+
+                    <p class="release-paragraph">
+                        I hereby release the University it's successors and assigns from any claims 
+                        whatsoever in connection with the use, publication of the images/videos thereof.
+                    </p>
+
+                    <div class="signature-section media-signature">
+                        <div class="signature-row">
+                            <div class="signature-field">
+                                <span class="signature-label">Date</span>
+                                <div class="date-line">
+                                    <input type="date" class="signature-date-input" id="mediaDate" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="signature-row">
+                            <div class="signature-field">
+                                <span class="signature-label">Signature</span>
+                                <div class="signature-line physical-signature">
+                                    <span class="signature-note">(Physical signature required when printing)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="signature-row">
+                            <div class="signature-field">
+                                <span class="signature-label">Name</span>
+                                <div class="name-line">
+                                    <input type="text" class="signature-name-input" id="mediaSignatureName" placeholder="Enter your full name" required>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Instructions Section -->
+    <div class="important-instructions">
+        <h3>📋 Important Instructions</h3>
+        <div class="instruction-box">
+            <p><strong>University Requirement:</strong> You must print <span style="background: yellow; font-weight: bold;">FOUR (4) copies</span> of this completed Media Release form for submission.</p>
+            <p><strong>Signature Requirement:</strong> Sign each of the 4 printed copies with a physical signature.</p>
+            <p><strong>Submission:</strong> Submit all 4 copies with signatures to the Registrar Academic office along with your Student Personal Details form.</p>
+            <p><strong>Note:</strong> Both forms (Student Personal Details and Media Release) are required for complete registration.</p>
+        </div>
+    </div>
+
+    <!-- Data Protection Consent Section -->
+    <div class="data-protection-section">
+        <h3>🔒 Data Protection Consent</h3>
+        <div class="consent-container">
+            <div class="consent-item">
+                <input type="checkbox" id="mediaDataConsent" required>
+                <label for="mediaDataConsent">
+                    I consent to the University of Eldoret collecting, storing, and processing my personal data provided in this media release 
+                    form for the purposes of media documentation and related university activities. I understand that my data will be 
+                    kept securely and only used for the stated purposes in compliance with the Data Protection Act, 2019.
+                </label>
+            </div>
+            <div class="consent-item">
+                <input type="checkbox" id="mediaDataRights" required>
+                <label for="mediaDataRights">
+                    I acknowledge that I have the right to access, correct, or request deletion of my personal data, and to withdraw my 
+                    consent at any time by contacting the University through the designated office or email address. *
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+        <button type="button" class="btn btn-secondary" onclick="clearMediaForm()">Clear Form</button>
+        <button type="button" class="btn btn-primary" onclick="submitMediaForm()">Submit Media Release</button>
+        <button type="button" class="btn btn-success" onclick="printMediaForm()">Print Form (4 copies)</button>
+        <button type="button" class="btn btn-info" onclick="downloadMediaPDF()">Download PDF</button>
+        <button type="button" class="btn btn-link" onclick="window.open('index.html', '_blank')">↗ Open Student Form</button>
+    </div>
+
+    <!-- Success Message -->
+    <div class="success-message" id="mediaSuccessMessage"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Processing...</div>
+    </div>
+
+    <!-- Media Form Script -->
+    <script>
+        // Media Form Specific Functions
+        let isSubmittingMedia = false;
+
+        // Initialize form with today's date
+        function initializeMediaForm() {
+            const today = new Date().toISOString().split('T')[0];
+            const mediaDateField = document.getElementById('mediaDate');
+            if (mediaDateField) {
+                mediaDateField.value = today;
+            }
+            
+            console.log('✅ Media form initialized');
+        }
+
+        // Validate media form
+        function validateMediaForm() {
+            const requiredFields = ['mediaFullName', 'mediaIdNumber', 'mediaDate', 'mediaSignatureName'];
+            let isValid = true;
+            let missingFields = [];
+            
+            requiredFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field && !field.value.trim()) {
+                    field.classList.add('error');
+                    isValid = false;
+                    missingFields.push(getMediaFieldLabel(fieldId));
+                } else if (field) {
+                    field.classList.remove('error');
+                    field.classList.add('valid');
+                }
+            });
+            
+            if (!isValid) {
+                alert('Please fill in all required fields:\n\n' + missingFields.join('\n'));
+                const firstError = document.querySelector('.inline-input.error, .signature-date-input.error, .signature-name-input.error');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstError.focus();
+                }
+            }
+            
+            return isValid;
+        }
+
+        function getMediaFieldLabel(fieldId) {
+            const labels = {
+                'mediaFullName': 'Full Name',
+                'mediaIdNumber': 'ID Number',
+                'mediaDate': 'Date',
+                'mediaSignatureName': 'Signature Name'
+            };
+            return labels[fieldId] || fieldId;
+        }
+
+        // Check consent for media form
+        function checkMediaConsent() {
+            const mediaDataConsent = document.getElementById('mediaDataConsent');
+            const mediaDataRights = document.getElementById('mediaDataRights');
+            
+            if (!mediaDataConsent || !mediaDataConsent.checked || !mediaDataRights || !mediaDataRights.checked) {
+                alert('❌ Please accept both data protection consent terms before proceeding.');
+                
+                const consentSection = document.querySelector('.data-protection-section');
+                if (consentSection) {
+                    consentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    consentSection.style.border = '3px solid #dc3545';
+                    consentSection.style.borderRadius = '10px';
+                    consentSection.style.padding = '20px';
+                    
+                    setTimeout(() => {
+                        consentSection.style.border = '';
+                        consentSection.style.borderRadius = '';
+                        consentSection.style.padding = '';
+                    }, 5000);
+                }
+                
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Get media form data
+        function getMediaFormData() {
+            const now = new Date();
+            
+            return {
+                formType: 'media_release',
+                submissionDate: now.toISOString(),
+                submissionYear: now.getFullYear(),
+                submissionMonth: now.getMonth() + 1,
+                submissionDay: now.getDate(),
+                formVersion: "2.5",
+                
+                personalInfo: {
+                    fullName: document.getElementById('mediaFullName').value.toUpperCase(),
+                    idNumber: document.getElementById('mediaIdNumber').value,
+                    signatureName: document.getElementById('mediaSignatureName').value.toUpperCase(),
+                    date: document.getElementById('mediaDate').value
+                },
+                
+                consent: {
+                    mediaRelease: true,
+                    dataProcessing: document.getElementById('mediaDataConsent').checked,
+                    rightsAcknowledgment: document.getElementById('mediaDataRights').checked,
+                    consentDate: now.toISOString()
+                },
+                
+                metadata: {
+                    userAgent: navigator.userAgent,
+                    processingStatus: "completed"
+                }
+            };
+        }
+
+        // Submit media form to Firebase
+        async function submitMediaForm() {
+            if (isSubmittingMedia) {
+                return;
+            }
+            
+            if (!validateMediaForm()) {
+                return;
+            }
+            
+            if (!checkMediaConsent()) {
+                return;
+            }
+            
+            if (!window.db) {
+                alert('❌ Database connection error. Please check your internet connection and try again.');
+                return;
+            }
+            
+            isSubmittingMedia = true;
+            
+            try {
+                showLoadingMessage('Submitting your Media Release form...');
+                
+                const formData = getMediaFormData();
+                
+                const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+                
+                formData.submissionDate = serverTimestamp();
+                
+                const docRef = await addDoc(collection(window.db, 'media_submissions'), formData);
+                
+                console.log('✅ Media form submitted with ID: ', docRef.id);
+                
+                hideLoadingMessage();
+                showMediaSuccessMessage();
+                
+                localStorage.removeItem('uoe_media_form');
+                
+                document.getElementById('mediaSuccessMessage').scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('❌ Error submitting media form: ', error);
+                hideLoadingMessage();
+                
+                let errorMessage = 'Submission failed. Please try again.';
+                
+                if (error.code === 'permission-denied') {
+                    errorMessage = 'Permission denied. Please check your connection and try again.';
+                } else if (error.code === 'unavailable') {
+                    errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+                }
+                
+                alert('❌ ' + errorMessage);
+            } finally {
+                isSubmittingMedia = false;
+            }
+        }
+
+        // Show success message
+        function showMediaSuccessMessage() {
+            const successMessage = document.getElementById('mediaSuccessMessage');
+            if (successMessage) {
+                successMessage.innerHTML = `
+                    <h3>✅ Media Release Form Submitted Successfully!</h3>
+                    <p>Your Media Release form has been submitted to the University of Eldoret system.</p>
+                    <p><strong>Next Steps:</strong></p>
+                    <ul style="text-align: left; max-width: 500px; margin: 10px auto;">
+                        <li>Print 4 copies of this form using the Print button</li>
+                        <li>Sign each copy with a physical signature</li>
+                        <li>Submit all physical copies to the Registrar Academic office</li>
+                        <li>Ensure you have also completed the Student Personal Details form</li>
+                    </ul>
+                    <p>Thank you for choosing University of Eldoret!</p>
+                `;
+                successMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 15000);
+            }
+        }
+
+        // Print media form
+        function printMediaForm() {
+            if (!validateMediaForm()) {
+                return;
+            }
+            
+            if (!checkMediaConsent()) {
+                return;
+            }
+            
+            const webElements = document.querySelectorAll(`
+                .form-actions, 
+                .success-message,
+                .important-instructions,
+                .data-protection-section
+            `);
+            
+            webElements.forEach(el => {
+                if (el) {
+                    el.style.display = 'none';
+                }
+            });
+            
+            const printNotice = document.createElement('div');
+            printNotice.id = 'printNotice';
+            printNotice.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #2a5298;
+                color: white;
+                padding: 15px;
+                border-radius: 10px;
+                z-index: 9999;
+                font-size: 14px;
+                max-width: 300px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            printNotice.innerHTML = `
+                <strong>📋 Remember:</strong><br>
+                Print <strong>4 copies</strong> and sign each copy with a physical signature.
+            `;
+            document.body.appendChild(printNotice);
+            
+            window.print();
+            
+            setTimeout(() => {
+                webElements.forEach(el => {
+                    if (el) {
+                        el.style.display = '';
+                    }
+                });
+                
+                const notice = document.getElementById('printNotice');
+                if (notice && document.body.contains(notice)) {
+                    document.body.removeChild(notice);
+                }
+            }, 1000);
+        }
+
+        // Download media PDF
+        async function downloadMediaPDF() {
+            if (!validateMediaForm()) {
+                return;
+            }
+            
+            if (!checkMediaConsent()) {
+                return;
+            }
+
+            try {
+                showLoadingMessage('Generating PDF... Please wait');
+
+                const webElements = document.querySelectorAll(`
+                    .form-actions, 
+                    .success-message,
+                    .important-instructions,
+                    .data-protection-section
+                `);
+                
+                webElements.forEach(el => {
+                    if (el) {
+                        el.style.display = 'none';
+                    }
+                });
+
+                const container = document.querySelector('.container');
+                container.classList.add('pdf-generation');
+                
+                const inputs = document.querySelectorAll('.inline-input, .signature-date-input, .signature-name-input');
+                inputs.forEach(input => {
+                    input.classList.remove('error', 'valid');
+                    input.style.webkitBoxShadow = '0 0 0 30px white inset';
+                    input.style.boxShadow = '0 0 0 30px white inset';
+                    input.style.background = 'white';
+                    input.style.backgroundColor = 'white';
+                    input.style.webkitTextFillColor = 'black';
+                    input.style.color = 'black';
+                    input.style.borderBottom = '1px solid #000';
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const canvas = await html2canvas(container, {
+                    scale: 1.5,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: 794,
+                    height: container.scrollHeight * 1.5,
+                    logging: false
+                });
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210;
+                const pageHeight = 297;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                const fileName = generateMediaFileName();
+                pdf.save(fileName);
+
+                hideLoadingMessage();
+                showMediaPDFSuccessMessage();
+
+            } catch (error) {
+                console.error('❌ Error generating PDF:', error);
+                hideLoadingMessage();
+                alert('❌ Error generating PDF. Please try again or use the Print option.');
+            } finally {
+                webElements.forEach(el => {
+                    if (el) {
+                        el.style.display = '';
+                    }
+                });
+                
+                const container = document.querySelector('.container');
+                if (container) {
+                    container.classList.remove('pdf-generation');
+                }
+            }
+        }
+
+        function generateMediaFileName() {
+            const fullNameField = document.getElementById('mediaFullName');
+            const idField = document.getElementById('mediaIdNumber');
+            
+            const name = fullNameField && fullNameField.value ? 
+                fullNameField.value.replace(/[^a-zA-Z0-9]/g, '_') : 'Student';
+            const id = idField && idField.value ? 
+                idField.value.replace(/[^a-zA-Z0-9]/g, '_') : '';
+            
+            const timestamp = new Date().toISOString().split('T')[0];
+            
+            return `UoE_Media_Release_${name}_${id}_${timestamp}.pdf`;
+        }
+
+        function showMediaPDFSuccessMessage() {
+            const successMessage = document.getElementById('mediaSuccessMessage');
+            if (successMessage) {
+                successMessage.innerHTML = `
+                    <h3>📄 Media Release PDF Generated Successfully!</h3>
+                    <p>Your Media Release form has been downloaded as a PDF.</p>
+                    <p><strong>Remember:</strong> Print 4 copies and sign each copy before submitting to the Registrar Academic office.</p>
+                `;
+                successMessage.style.display = 'block';
+                
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 10000);
+            }
+        }
+
+        // Clear media form
+        function clearMediaForm() {
+            if (confirm('Are you sure you want to clear all form data? This action cannot be undone.')) {
+                const mediaForm = document.getElementById('mediaConsentForm');
+                if (mediaForm) {
+                    mediaForm.reset();
+                }
+                
+                document.querySelectorAll('.inline-input, .signature-date-input, .signature-name-input').forEach(field => {
+                    field.classList.remove('error', 'valid');
+                });
+                
+                const mediaDataConsent = document.getElementById('mediaDataConsent');
+                const mediaDataRights = document.getElementById('mediaDataRights');
+                if (mediaDataConsent) mediaDataConsent.checked = false;
+                if (mediaDataRights) mediaDataRights.checked = false;
+                
+                const successMessage = document.getElementById('mediaSuccessMessage');
+                if (successMessage) {
+                    successMessage.style.display = 'none';
+                }
+                
+                localStorage.removeItem('uoe_media_form');
+                
+                // Reinitialize with today's date
+                initializeMediaForm();
+                
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                
+                console.log('✅ Media form cleared');
+            }
+        }
+
+        // Utility functions
+        function showLoadingMessage(message) {
+            const overlay = document.getElementById('loadingOverlay');
+            const text = document.getElementById('loadingText');
+            
+            if (overlay) {
+                overlay.style.display = 'flex';
+            }
+            
+            if (text) {
+                text.textContent = message;
+            }
+        }
+
+        function hideLoadingMessage() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+
+        // Auto-save functionality
+        function saveMediaFormData() {
+            const formData = {};
+            const form = document.getElementById('mediaConsentForm');
+            
+            if (form) {
+                const inputs = form.querySelectorAll('input');
+                inputs.forEach(input => {
+                    if (input.id) {
+                        if (input.type === 'checkbox') {
+                            formData[input.id] = input.checked;
+                        } else {
+                            formData[input.id] = input.value;
+                        }
+                    }
+                });
+                
+                // Save consent data
+                const mediaDataConsent = document.getElementById('mediaDataConsent');
+                const mediaDataRights = document.getElementById('mediaDataRights');
+                
+                if (mediaDataConsent) formData.mediaDataConsent = mediaDataConsent.checked;
+                if (mediaDataRights) formData.mediaDataRights = mediaDataRights.checked;
+                
+                try {
+                    localStorage.setItem('uoe_media_form', JSON.stringify(formData));
+                } catch (error) {
+                    console.warn('Could not save media form data:', error);
+                }
+            }
+        }
+
+        function loadSavedMediaData() {
+            try {
+                const savedData = localStorage.getItem('uoe_media_form');
+                if (savedData) {
+                    const formData = JSON.parse(savedData);
+                    
+                    Object.keys(formData).forEach(fieldId => {
+                        const field = document.getElementById(fieldId);
+                        if (field) {
+                            if (field.type === 'checkbox') {
+                                field.checked = formData[fieldId];
+                            } else {
+                                field.value = formData[fieldId];
+                            }
+                        }
+                    });
+                    
+                    console.log('✅ Saved media form data restored');
+                }
+            } catch (error) {
+                console.warn('Could not load saved media form data:', error);
+            }
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeMediaForm();
+                loadSavedMediaData();
+                
+                // Auto-save every 30 seconds
+                setInterval(saveMediaFormData, 30000);
+                
+                // Save on page unload
+                window.addEventListener('beforeunload', saveMediaFormData);
+            });
+        } else {
+            initializeMediaForm();
+            loadSavedMediaData();
+            
+            // Auto-save every 30 seconds
+            setInterval(saveMediaFormData, 30000);
+            
+            // Save on page unload
+            window.addEventListener('beforeunload', saveMediaFormData);
+        }
+
+        console.log('✅ Media Release form script loaded');
+    </script>
+</body>
+</html>

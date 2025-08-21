@@ -1,5 +1,5 @@
-// script.js - Main Application Script (Updated with All Fixes)
-// University of Eldoret Student Form - Complete Implementation
+// script.js - Fixed Original Working Version
+// University of Eldoret Student Form - Main Script
 
 // ========================================
 // GLOBAL STATE VARIABLES
@@ -8,6 +8,70 @@
 let isSubmitting = false;
 let isLocationDataLoaded = false;
 let locationData = null;
+
+// ========================================
+// FIREBASE SUBMISSION FUNCTIONS
+// ========================================
+
+async function submitToFirebase() {
+    if (isSubmitting) {
+        return;
+    }
+    
+    if (!validateForm()) {
+        return;
+    }
+    
+    if (!checkDataConsent()) {
+        return;
+    }
+    
+    if (!window.db) {
+        alert('❌ Database connection error. Please check your internet connection and try again.');
+        return;
+    }
+    
+    isSubmitting = true;
+    
+    try {
+        showLoadingMessage('Submitting your form...');
+        
+        const formData = getFormDataForFirebase();
+        
+        const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+        
+        formData.metadata.submissionDate = serverTimestamp();
+        
+        const docRef = await addDoc(collection(window.db, 'student_submissions'), formData);
+        
+        console.log('✅ Document written with ID: ', docRef.id);
+        
+        await updateSubmissionStats();
+        
+        hideLoadingMessage();
+        showSuccessMessage();
+        
+        localStorage.removeItem('uoe_student_form');
+        
+        document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+        
+    } catch (error) {
+        console.error('❌ Error adding document: ', error);
+        hideLoadingMessage();
+        
+        let errorMessage = 'Submission failed. Please try again.';
+        
+        if (error.code === 'permission-denied') {
+            errorMessage = 'Permission denied. Please check your connection and try again.';
+        } else if (error.code === 'unavailable') {
+            errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
+        }
+        
+        alert('❌ ' + errorMessage);
+    } finally {
+        isSubmitting = false;
+    }
+}
 
 // ========================================
 // FIXED getFormDataForFirebase FUNCTION
@@ -124,7 +188,6 @@ function getFormDataForFirebase() {
             // FIXED: Added the missing fields that are now in HTML
             nearestTown: getFieldValue('nearestTown') || null,
             nearestPolice: getFieldValue('nearestPolice') || null
-            // REMOVED: homeAddress - no longer needed
         },
 
         // Marital Information
@@ -231,12 +294,16 @@ function getFormDataForFirebase() {
 }
 
 // ========================================
-// LOCATION MANAGEMENT FUNCTIONS
+// ORIGINAL WORKING LOCATION FUNCTIONS
 // ========================================
 
 async function loadLocationData() {
     try {
         const response = await fetch('./kenyan_locations.json');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
         locationData = await response.json();
         isLocationDataLoaded = true;
         populateCounties();
@@ -667,137 +734,6 @@ function hideLoadingMessage() {
     }
 }
 
-// ========================================
-// FORM INITIALIZATION
-// ========================================
-
-function initializeForm() {
-    setupCheckboxExclusivity('maritalStatus');
-    setupCheckboxExclusivity('fatherStatus');
-    setupCheckboxExclusivity('motherStatus');
-    
-    // Setup location dropdown event listeners
-    const countySelect = document.getElementById('county');
-    const subCountySelect = document.getElementById('subCounty');
-    const constituencySelect = document.getElementById('constituency');
-    
-    if (countySelect) {
-        countySelect.addEventListener('change', handleCountyChange);
-    }
-    
-    if (subCountySelect) {
-        subCountySelect.addEventListener('change', handleSubCountyChange);
-    }
-    
-    if (constituencySelect) {
-        constituencySelect.addEventListener('change', handleConstituencyChange);
-    }
-    
-    // Required field validation
-    const requiredFields = ['fullName', 'admissionNumber', 'phoneNumber', 'nationalId', 
-                           'nationality', 'gender', 'dateOfBirth', 'placeOfBirth', 'permanentResidence', 
-                           'location', 'county', 'emergency1Name', 'emergency1Relationship', 'emergency1Phone'];
-    
-    requiredFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('blur', function() {
-                validateField(this);
-            });
-        }
-    });
-    
-    // Data consent visual feedback
-    const dataConsent = document.getElementById('dataConsent');
-    const dataRights = document.getElementById('dataRights');
-    
-    [dataConsent, dataRights].forEach(checkbox => {
-        if (checkbox) {
-            checkbox.addEventListener('change', function() {
-                if (this.checked) {
-                    this.parentElement.style.border = '2px solid #28a745';
-                    this.parentElement.style.borderRadius = '5px';
-                    this.parentElement.style.padding = '10px';
-                    setTimeout(() => {
-                        this.parentElement.style.border = '';
-                        this.parentElement.style.borderRadius = '';
-                        this.parentElement.style.padding = '';
-                    }, 2000);
-                }
-            });
-        }
-    });
-    
-    // Load location data
-    loadLocationData();
-    
-    console.log('✅ Form initialized successfully');
-}
-
-// ========================================
-// FIREBASE SUBMISSION FUNCTIONS
-// ========================================
-
-async function submitToFirebase() {
-    if (isSubmitting) {
-        return;
-    }
-    
-    if (!validateForm()) {
-        return;
-    }
-    
-    if (!checkDataConsent()) {
-        return;
-    }
-    
-    if (!window.db) {
-        alert('❌ Database connection error. Please check your internet connection and try again.');
-        return;
-    }
-    
-    isSubmitting = true;
-    
-    try {
-        showLoadingMessage('Submitting your form...');
-        
-        const formData = getFormDataForFirebase();
-        
-        const { collection, addDoc, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
-        
-        formData.metadata.submissionDate = serverTimestamp();
-        
-        const docRef = await addDoc(collection(window.db, 'student_submissions'), formData);
-        
-        console.log('✅ Document written with ID: ', docRef.id);
-        
-        await updateSubmissionStats();
-        
-        hideLoadingMessage();
-        showSuccessMessage();
-        
-        localStorage.removeItem('uoe_student_form');
-        
-        document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
-        
-    } catch (error) {
-        console.error('❌ Error adding document: ', error);
-        hideLoadingMessage();
-        
-        let errorMessage = 'Submission failed. Please try again.';
-        
-        if (error.code === 'permission-denied') {
-            errorMessage = 'Permission denied. Please check your connection and try again.';
-        } else if (error.code === 'unavailable') {
-            errorMessage = 'Service temporarily unavailable. Please try again in a few minutes.';
-        }
-        
-        alert('❌ ' + errorMessage);
-    } finally {
-        isSubmitting = false;
-    }
-}
-
 async function updateSubmissionStats() {
     try {
         const { doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } = 
@@ -842,8 +778,13 @@ function showSuccessMessage() {
         successMessage.innerHTML = `
             <h3>✅ Form Submitted Successfully!</h3>
             <p>Your Student Personal Details form has been submitted to the University of Eldoret system.</p>
-            <p><strong>Important:</strong> You still need to complete and submit the Media Release form.</p>
-            <p>After completing both forms, you can print 4 copies of each for physical submission.</p>
+            <p><strong>Next Steps:</strong></p>
+            <ul style="text-align: left; max-width: 500px; margin: 10px auto;">
+                <li>Print 4 copies of this form using the Print button</li>
+                <li>Attach passport photos (yellow background) to each copy</li>
+                <li>Complete the Media Release form separately</li>
+                <li>Submit all physical copies to the Registrar Academic office</li>
+            </ul>
             <p>Thank you for choosing University of Eldoret!</p>
         `;
         successMessage.style.display = 'block';
@@ -855,51 +796,10 @@ function showSuccessMessage() {
 }
 
 // ========================================
-// LEGACY GLOBAL FUNCTIONS (for compatibility)
+// PRINT AND PDF FUNCTIONS
 // ========================================
 
-// These are maintained for backward compatibility but the dual form manager handles the main functionality
-window.submitForm = function() {
-    console.log('📝 Legacy submitForm called - redirecting to dual form manager');
-    if (window.DualFormManager) {
-        return window.DualFormManager.submitBothForms();
-    } else {
-        return submitToFirebase();
-    }
-};
-
-window.printForm = function() {
-    console.log('🖨️ Legacy printForm called - redirecting to dual form manager');
-    if (window.DualFormManager) {
-        return window.DualFormManager.printBothForms();
-    } else {
-        return printSingleForm();
-    }
-};
-
-window.downloadPDF = function() {
-    console.log('📄 Legacy downloadPDF called - redirecting to dual form manager');
-    if (window.DualFormManager) {
-        return window.DualFormManager.downloadBothPDFs();
-    } else {
-        return downloadSinglePDF();
-    }
-};
-
-window.clearForm = function() {
-    console.log('🗑️ Legacy clearForm called - redirecting to dual form manager');
-    if (window.DualFormManager) {
-        return window.DualFormManager.clearAllForms();
-    } else {
-        return clearSingleForm();
-    }
-};
-
-// ========================================
-// SINGLE FORM FUNCTIONS (fallback)
-// ========================================
-
-function printSingleForm() {
+function printForm() {
     if (!validateForm()) {
         return;
     }
@@ -959,7 +859,7 @@ function printSingleForm() {
     }, 1000);
 }
 
-async function downloadSinglePDF() {
+async function downloadPDF() {
     if (!validateForm()) {
         return;
     }
@@ -1043,14 +943,6 @@ async function downloadSinglePDF() {
         hideLoadingMessage();
         alert('❌ Error generating PDF. Please try again or use the Print option.');
     } finally {
-        const webElements = document.querySelectorAll(`
-            .form-navigation,
-            .form-actions, 
-            .success-message,
-            .important-instructions,
-            .data-protection-section
-        `);
-        
         webElements.forEach(el => {
             if (el) {
                 el.style.display = '';
@@ -1094,7 +986,7 @@ function showPDFSuccessMessage() {
     }
 }
 
-function clearSingleForm() {
+function clearForm() {
     if (confirm('Are you sure you want to clear all form data? This action cannot be undone.')) {
         const studentForm = document.getElementById('studentForm');
         if (studentForm) {
@@ -1130,6 +1022,73 @@ function clearSingleForm() {
         
         console.log('✅ Form cleared');
     }
+}
+
+// ========================================
+// FORM INITIALIZATION
+// ========================================
+
+function initializeForm() {
+    setupCheckboxExclusivity('maritalStatus');
+    setupCheckboxExclusivity('fatherStatus');
+    setupCheckboxExclusivity('motherStatus');
+    
+    // Setup location dropdown event listeners
+    const countySelect = document.getElementById('county');
+    const subCountySelect = document.getElementById('subCounty');
+    const constituencySelect = document.getElementById('constituency');
+    
+    if (countySelect) {
+        countySelect.addEventListener('change', handleCountyChange);
+    }
+    
+    if (subCountySelect) {
+        subCountySelect.addEventListener('change', handleSubCountyChange);
+    }
+    
+    if (constituencySelect) {
+        constituencySelect.addEventListener('change', handleConstituencyChange);
+    }
+    
+    // Required field validation
+    const requiredFields = ['fullName', 'admissionNumber', 'phoneNumber', 'nationalId', 
+                           'nationality', 'gender', 'dateOfBirth', 'placeOfBirth', 'permanentResidence', 
+                           'location', 'county', 'emergency1Name', 'emergency1Relationship', 'emergency1Phone'];
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('blur', function() {
+                validateField(this);
+            });
+        }
+    });
+    
+    // Data consent visual feedback
+    const dataConsent = document.getElementById('dataConsent');
+    const dataRights = document.getElementById('dataRights');
+    
+    [dataConsent, dataRights].forEach(checkbox => {
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    this.parentElement.style.border = '2px solid #28a745';
+                    this.parentElement.style.borderRadius = '5px';
+                    this.parentElement.style.padding = '10px';
+                    setTimeout(() => {
+                        this.parentElement.style.border = '';
+                        this.parentElement.style.borderRadius = '';
+                        this.parentElement.style.padding = '';
+                    }, 2000);
+                }
+            });
+        }
+    });
+    
+    // Load location data
+    loadLocationData();
+    
+    console.log('✅ Form initialized successfully');
 }
 
 // ========================================
@@ -1192,6 +1151,16 @@ function loadSavedData() {
 }
 
 // ========================================
+// GLOBAL FUNCTION DEFINITIONS
+// ========================================
+
+window.submitForm = submitToFirebase;
+window.printForm = printForm;
+window.downloadPDF = downloadPDF;
+window.clearForm = clearForm;
+window.validateForm = validateForm;
+
+// ========================================
 // INITIALIZATION
 // ========================================
 
@@ -1218,4 +1187,4 @@ if (document.readyState === 'loading') {
     window.addEventListener('beforeunload', saveFormData);
 }
 
-console.log('✅ Main script loaded with all fixes applied');
+console.log('✅ Original working script loaded with fixes applied');

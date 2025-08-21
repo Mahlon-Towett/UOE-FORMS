@@ -1,8 +1,466 @@
 /* University of Eldoret Student Form - Complete Styles */
 
 /* ========================================
-   Reset and Base Styles
+   Progress Indicator
    ======================================== */
+.progress-container {
+    background: linear-gradient(135deg, #2a5298 0%, #1e3d72 100%);
+    padding: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.progress-bar {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: rgba(255,255,255,0.6);
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.progress-step.active {
+    color: white;
+}
+
+.progress-step.completed {
+    color: #4CAF50;
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active .step-number {
+    background: rgba(255,255,255,0.9);
+    color: #2a5298;
+    transform: scale(1.1);
+}
+
+.progress-step.completed .step-number {
+    background: #4CAF50;
+    color: white;
+}
+
+.step-title {
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+}
+
+.progress-line {
+    position: absolute;
+    top: 25px;
+    left: 25px;
+    right: 25px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.progress-line.completed {
+    background: #4CAF50;
+}
+
+/* ========================================
+   Form Wrapper and Sections
+   ======================================== */
+.form-wrapper {
+    position: relative;
+    min-height: 80vh;
+}
+
+.form-section {
+    display: none;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+}
+
+.form-section.active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* ========================================
+   Form Navigation
+   ======================================== */
+.form-navigation {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 25px;
+    margin: 20px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 200px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.btn-primary:disabled {
+    background: #6c757d;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+    color: white;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+    color: white;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid #6c757d;
+    color: #6c757d;
+}
+
+.btn-outline:hover {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-link {
+    background: transparent;
+    color: #2a5298;
+    border: 1px solid #2a5298;
+    text-decoration: none;
+}
+
+.btn-link:hover {
+    background: #2a5298;
+    color: white;
+}
+
+.btn-disabled {
+    background: #6c757d !important;
+    cursor: not-allowed !important;
+}
+
+/* ========================================
+   Final Actions Section
+   ======================================== */
+.final-actions {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border: 2px solid #28a745;
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px;
+    text-align: center;
+    animation: slideInUp 0.5s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.completion-message {
+    margin-bottom: 25px;
+}
+
+.completion-message h3 {
+    color: #155724;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.print-instructions {
+    background: rgba(255,255,255,0.8);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: left;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.print-instructions h4 {
+    color: #155724;
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.print-instructions ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.print-instructions li {
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(21, 87, 36, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.print-instructions li:before {
+    content: "✓";
+    color: #28a745;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* ========================================
+   Media Release Form Specific Styles
+   ======================================== */
+.release-form-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.form-number-box {
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid #000;
+    padding: 8px 15px;
+    gap: 10px;
+}
+
+.form-arrow {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.form-title-text {
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.release-content {
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.8;
+    font-size: 13px;
+}
+
+.release-paragraph {
+    margin-bottom: 20px;
+    text-align: justify;
+}
+
+.fill-field {
+    border-bottom: 1px solid #000;
+    display: inline-block;
+    min-width: 150px;
+    margin: 0 5px;
+}
+
+.inline-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13px;
+    padding: 2px 5px;
+}
+
+.inline-input:focus {
+    outline: none;
+    background: #f0f8ff;
+}
+
+.inline-input[readonly] {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.media-signature {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 400px;
+}
+
+.signature-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.signature-row .signature-label {
+    min-width: 80px;
+    font-weight: bold;
+}
+
+.date-line, .name-line {
+    flex: 1;
+    border-bottom: 1px solid #000;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.signature-date-input, .signature-name-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    padding: 5px;
+}
+
+.signature-date-input[readonly], .signature-name-input[readonly] {
+    background: #f8f9fa;
+    color: #495057;
+}
+
+.physical-signature {
+    flex: 1;
+    border-bottom: 1px solid #000;
+    min-height: 40px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.signature-note {
+    font-size: 10px;
+    color: #666;
+    font-style: italic;
+}
+
+/* ========================================
+   Responsive Design for Progress Bar
+   ======================================== */
+@media (max-width: 768px) {
+    .progress-bar {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .progress-line {
+        display: none;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+    }
+    
+    .form-navigation {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .print-instructions {
+        padding: 15px;
+    }
+    
+    .four-column {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .progress-container {
+        padding: 15px 10px;
+    }
+    
+    .step-title {
+        font-size: 12px;
+    }
+    
+    .final-actions {
+        margin: 10px;
+        padding: 20px;
+    }
+}
 * {
     margin: 0;
     padding: 0;
@@ -164,14 +622,15 @@ body {
     padding: 20px;
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     position: relative;
-    min-height: 140px;
+    min-height: 160px;
 }
 
 .header-content {
     display: grid;
-    grid-template-columns: 100px 1fr 200px;
+    grid-template-columns: 100px 1fr 150px;
     gap: 20px;
     align-items: start;
+    padding-right: 140px; /* Add space for photo box */
 }
 
 .university-logo img {
@@ -228,6 +687,7 @@ body {
     padding: 10px;
     color: #333;
     font-weight: 500;
+    z-index: 10;
 }
 
 /* ========================================
