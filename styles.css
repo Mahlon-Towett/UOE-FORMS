@@ -1,13 +1,8 @@
-.status-checkboxes {
-    display: flex;
-    gap: 15px;
-    margin-left: 20px;
-}/* ========================================
-   University of Eldoret Student Form Styles
-   Production Version - Exact Format Replica
-   ======================================== */
+/* University of Eldoret Student Form - Complete Styles */
 
-/* Reset and Base Styles */
+/* ========================================
+   Reset and Base Styles
+   ======================================== */
 * {
     margin: 0;
     padding: 0;
@@ -16,117 +11,220 @@
 
 body {
     font-family: 'Times New Roman', serif;
-    background: #f5f5f5;
     line-height: 1.4;
-    color: #000;
-    font-size: 12px;
+    background-color: #f5f5f5;
+    color: #333;
 }
 
 /* ========================================
-   Main Container
+   Main Container and Navigation
+   ======================================== */
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    min-height: 100vh;
+}
+
+.form-navigation {
+    background: linear-gradient(135deg, #2a5298 0%, #1e3d72 100%);
+    color: white;
+    padding: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.nav-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.nav-header h1 {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.nav-header p {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.form-tabs {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+    min-width: 200px;
+}
+
+.tab-button:hover {
+    background: rgba(255,255,255,0.2);
+    border-color: rgba(255,255,255,0.5);
+}
+
+.tab-button.active {
+    background: rgba(255,255,255,0.9);
+    color: #2a5298;
+    border-color: white;
+}
+
+.tab-number {
+    background: rgba(255,255,255,0.2);
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.tab-button.active .tab-number {
+    background: #2a5298;
+    color: white;
+}
+
+.tab-status {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.completion-status {
+    text-align: center;
+}
+
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.1);
+    padding: 10px 20px;
+    border-radius: 25px;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.status-indicator.complete {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: rgba(76, 175, 80, 0.5);
+}
+
+.status-icon {
+    font-size: 18px;
+}
+
+/* ========================================
+   Form Container Management
+   ======================================== */
+.form-container {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.form-container.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========================================
+   Original Form Styles
    ======================================== */
 .container {
-    max-width: 210mm; /* A4 width */
+    max-width: 210mm;
     margin: 20px auto;
     background: white;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    min-height: 297mm; /* A4 height */
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    font-size: 12px;
+    position: relative;
 }
 
-/* ========================================
-   Header Section - Horizontal Layout
-   ======================================== */
+/* Header Section */
 .header {
-    border-bottom: 2px solid #000;
+    border-bottom: 3px solid #2a5298;
     padding: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     position: relative;
-    background: white;
-    height: 160px;
+    min-height: 140px;
 }
 
 .header-content {
     display: grid;
-    grid-template-columns: 120px 1fr 220px;
+    grid-template-columns: 100px 1fr 200px;
     gap: 20px;
     align-items: start;
-    height: 100%;
-}
-
-/* University Logo - Left Side */
-.university-logo {
-    width: 100px;
-    height: 100px;
-    margin-top: 10px;
 }
 
 .university-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    width: 100px;
+    height: 100px;
+    border: 2px solid #2a5298;
+    border-radius: 10px;
 }
 
-/* Header Center - University Name */
 .header-center {
     text-align: center;
-    padding-top: 15px;
+    padding-top: 10px;
 }
 
 .header-center h1 {
-    font-size: 20px;
-    font-weight: bold;
+    font-size: 22px;
+    color: #2a5298;
     margin-bottom: 5px;
-    line-height: 1.1;
-    color: #000;
+    font-weight: bold;
 }
 
 .tagline {
-    font-size: 11px;
     font-style: italic;
-    margin-bottom: 12px;
-    color: #333;
-}
-
-.header-center h2 {
+    color: #666;
+    margin-bottom: 15px;
     font-size: 11px;
-    font-weight: bold;
-    line-height: 1.3;
-    color: #000;
 }
 
-/* Contact Information - Right Side */
+.office-details {
+    font-size: 10px;
+    line-height: 1.3;
+}
+
 .contact-info {
     font-size: 9px;
-    line-height: 1.3;
-    text-align: left;
-    padding-top: 5px;
+    line-height: 1.4;
+    text-align: right;
+    color: #555;
 }
 
-.reference {
-    font-weight: bold;
-    margin-bottom: 3px;
-    font-size: 10px;
-}
-
-/* Photo Box - Positioned to not overlap */
 .photo-box {
     position: absolute;
     right: 20px;
-    top: 120px;
-    width: 130px;
-    height: 150px;
+    top: 20px;
+    width: 120px;
+    height: 140px;
     border: 2px solid #000;
-    background: #f9f9f9;
-    z-index: 10;
-}
-
-.photo-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    font-size: 11px;
     text-align: center;
-    line-height: 1.3;
+    font-size: 10px;
+    background: white;
     padding: 10px;
     color: #333;
     font-weight: 500;
@@ -266,6 +364,44 @@ body {
     color: #333;
 }
 
+/* Four Column Layout for Location Details */
+.four-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 12px;
+}
+
+/* ========================================
+   Location Fields Styling
+   ======================================== */
+.location-dropdown {
+    border: none;
+    border-bottom: 1px solid #000;
+    padding: 2px 5px;
+    font-family: inherit;
+    font-size: 12px;
+    background: transparent;
+    width: 100%;
+}
+
+.location-dropdown:disabled {
+    color: #999;
+    background: #f5f5f5;
+}
+
+.location-help-text {
+    font-size: 10px;
+    color: #666;
+    margin-top: 2px;
+    font-style: italic;
+}
+
+.location-error {
+    border-bottom-color: #dc3545 !important;
+    background-color: #ffe6e6 !important;
+}
+
 /* ========================================
    Checkbox Styling
    ======================================== */
@@ -323,6 +459,13 @@ body {
     flex: 0.6;
     margin-right: 20px;
     min-width: 200px;
+}
+
+.status-checkboxes {
+    display: flex;
+    gap: 15px;
+    margin-left: 20px;
+    align-items: center;
 }
 
 /* ========================================
@@ -411,115 +554,285 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 40px;
     margin-top: 30px;
-    padding-top: 20px;
+    margin-bottom: 20px;
 }
 
 .signature-field {
     text-align: center;
 }
 
-.signature-field span {
-    font-weight: bold;
-    font-size: 12px;
-}
-
 .signature-line {
     border-bottom: 1px solid #000;
     height: 30px;
-    margin-top: 5px;
-}
-
-/* ========================================
-   Footer Section with Logo
-   ======================================== */
-.footer-section {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 30px;
-    margin-top: 30px;
-    padding: 20px;
-    border-top: 2px solid #2a5298;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-}
-
-.university-footer-logo {
-    width: 60px;
-    height: 60px;
-}
-
-.university-footer-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-
-.iso-certification {
-    text-align: center;
-    font-size: 10px;
-    flex: 1;
-}
-
-.iso-logo {
-    margin-top: 5px;
-    font-size: 16px;
-}
-
-/* ========================================
-   Form Actions (Web Only) - Bottom Positioned
-   ======================================== */
-.form-actions {
-    text-align: center;
-    padding: 25px 20px;
-    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
-    border-top: 3px solid #2a5298;
-    margin-top: 30px;
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 5px;
     position: relative;
 }
 
-.form-actions::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #2a5298, transparent);
+.signature-label {
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/* ========================================
+   Media Release Form Specific Styles
+   ======================================== */
+.release-form-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.form-number-box {
+    display: inline-flex;
+    align-items: center;
+    border: 2px solid #000;
+    padding: 8px 15px;
+    gap: 10px;
+}
+
+.form-arrow {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.form-title-text {
+    font-size: 16px;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+.release-content {
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.8;
+    font-size: 13px;
+}
+
+.release-paragraph {
+    margin-bottom: 20px;
+    text-align: justify;
+}
+
+.fill-field {
+    border-bottom: 1px solid #000;
+    display: inline-block;
+    min-width: 150px;
+    margin: 0 5px;
+}
+
+.inline-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.inline-input:focus {
+    outline: none;
+    background: #f0f8ff;
+}
+
+.media-signature {
+    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 400px;
+}
+
+.signature-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.signature-row .signature-label {
+    min-width: 80px;
+    font-weight: bold;
+}
+
+.date-line, .name-line {
+    flex: 1;
+    border-bottom: 1px solid #000;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.signature-date-input, .signature-name-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: center;
+    font-weight: bold;
+}
+
+.physical-signature {
+    flex: 1;
+    border-bottom: 1px solid #000;
+    min-height: 40px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.signature-note {
+    font-size: 10px;
+    color: #666;
+    font-style: italic;
+}
+
+/* ========================================
+   Instructions and Consent Sections
+   ======================================== */
+.important-instructions {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 2px solid #856404;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px;
+}
+
+.important-instructions h3 {
+    color: #856404;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.instruction-box p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.data-protection-section {
+    background: linear-gradient(135deg, #d1ecf1 0%, #b8e6f1 100%);
+    border: 2px solid #0c5460;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px;
+}
+
+.data-protection-section h3 {
+    color: #0c5460;
+    margin-bottom: 15px;
+    font-size: 18px;
+}
+
+.consent-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.consent-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 15px;
+    background: rgba(255,255,255,0.7);
+    border-radius: 8px;
+    border: 1px solid rgba(12, 84, 96, 0.2);
+}
+
+.consent-item input[type="checkbox"] {
+    margin-top: 3px;
+    transform: scale(1.3);
+}
+
+.consent-item label {
+    line-height: 1.5;
+    font-size: 13px;
+}
+
+/* ========================================
+   Form Actions
+   ======================================== */
+.form-actions {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 25px;
+    margin: 20px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
 }
 
 .btn {
-    background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
-    color: white;
-    padding: 15px 30px;
+    padding: 12px 25px;
     border: none;
     border-radius: 8px;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
     cursor: pointer;
-    margin: 0 12px;
     transition: all 0.3s ease;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-    min-width: 140px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 150px;
 }
 
 .btn:hover {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-    transform: translateY(-3px);
-    box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
-.btn:active {
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+    color: white;
 }
 
 .btn-secondary {
-    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    background: linear-gradient(135deg, #6c757d 0%, #545b62 100%);
+    color: white;
 }
 
-.btn-secondary:hover {
-    background: linear-gradient(135deg, #495057 0%, #6c757d 100%);
+/* ========================================
+   ISO Certification
+   ======================================== */
+.iso-certification {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+    padding: 15px;
+    border-top: 2px solid #2a5298;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.iso-logo img {
+    width: 50px;
+    height: 50px;
+}
+
+.iso-certification p {
+    font-size: 12px;
+    font-weight: bold;
+    color: #2a5298;
+}
+
+.iso-icon {
+    font-size: 24px;
 }
 
 /* ========================================
@@ -539,7 +852,45 @@ body {
 }
 
 /* ========================================
-   Validation Styles - No Green Colors
+   Loading Overlay
+   ======================================== */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #2a5298;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* ========================================
+   Validation Styles
    ======================================== */
 .field-input.error {
     background-color: #ffe6e6 !important;
@@ -574,35 +925,30 @@ input:invalid {
     border-color: inherit !important;
 }
 
-/* Disable all HTML5 validation visual indicators */
-input[type="text"]:valid,
-input[type="email"]:valid,
-input[type="tel"]:valid,
-input[type="date"]:valid,
-input[type="number"]:valid {
-    border-bottom: 1px solid #000 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-input[type="text"]:invalid,
-input[type="email"]:invalid,
-input[type="tel"]:invalid,
-input[type="date"]:invalid,
-input[type="number"]:invalid {
-    border-bottom: 1px solid #000 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
 /* ========================================
    Print Styles - Enhanced for PDF Generation
    ======================================== */
 @media print {
+    .form-navigation,
     .form-actions, 
     .success-message,
-    .pre-submission-section {
+    .important-instructions,
+    .data-protection-section,
+    .instructions-section,
+    .consent-section,
+    .loading-overlay {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+    
+    .main-container {
+        background: white;
+    }
+    
+    .form-container {
+        display: block !important;
+        page-break-after: always;
     }
     
     .container {
@@ -626,7 +972,6 @@ input[type="number"]:invalid {
     select.field-input {
         border-bottom: 1px solid #000 !important;
         background: white !important;
-        /* Remove any highlights or autocomplete styling */
         -webkit-appearance: none !important;
         -webkit-box-shadow: 0 0 0 30px white inset !important;
         box-shadow: 0 0 0 30px white inset !important;
@@ -674,253 +1019,46 @@ input[type="number"]:invalid {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    
-    /* Keep parent info together */
-    .form-field:nth-child(19),  /* Father info start */
-    .form-field:nth-child(20),
-    .form-field:nth-child(21),
-    .form-field:nth-child(22) {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-    
-    /* Keep mother info together */
-    .form-field:nth-child(23),  /* Mother info start */
-    .form-field:nth-child(24),
-    .form-field:nth-child(25),
-    .form-field:nth-child(26) {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-    
-    /* Keep emergency contacts together */
-    .emergency-section {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-    
-    /* Footer section for print */
-    .footer-section {
-        border-top: 2px solid #000;
-        background: white;
-        page-break-inside: avoid;
-        margin-top: 20px;
-        padding: 15px;
-    }
-    
-    .university-footer-logo img {
-        width: 50px;
-        height: 50px;
-    }
-    
-    /* Ensure footer appears on every page */
-    @page {
-        margin-bottom: 80px;
-    }
-    
-    .footer-section {
-        position: fixed;
-        bottom: 20px;
-        left: 0;
-        right: 0;
-        width: 100%;
-        z-index: 1000;
-    }
 }
 
-/* ========================================
-   Pre-Submission Section (Web Only) - Force Visibility
-   ======================================== */
-.pre-submission-section {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-top: 3px solid #2a5298;
-    padding: 30px 20px;
-    margin-top: 20px;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-.printing-instructions {
-    margin-bottom: 25px;
-}
-
-.printing-instructions h3 {
-    color: #2a5298;
-    font-size: 18px;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.instruction-box {
-    background: #fff3cd;
-    border: 2px solid #ffc107;
-    border-radius: 8px;
-    padding: 20px;
-    line-height: 1.6;
-}
-
-.instruction-box p {
-    margin-bottom: 10px;
-    font-size: 14px;
-}
-
-.instruction-box p:last-child {
-    margin-bottom: 0;
-}
-
-.highlight {
-    background: #ffc107;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: bold;
-    color: #000;
-}
-
-.data-protection-section h3 {
-    color: #2a5298;
-    font-size: 18px;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.data-protection-notice {
-    background: #e3f2fd;
-    border: 2px solid #2196f3;
-    border-radius: 8px;
-    padding: 20px;
-    line-height: 1.6;
-}
-
-.data-protection-notice p {
-    font-size: 13px;
-    margin-bottom: 15px;
-    text-align: justify;
-    color: #333;
-}
-
-.consent-checkbox {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    margin-top: 15px;
-    padding: 10px;
-    background: rgba(255, 255, 255, 0.7);
-    border-radius: 8px;
-    border-left: 4px solid #2196f3;
-}
-
-.consent-checkbox:first-child {
-    margin-top: 0;
-}
-
-.consent-checkbox input[type="checkbox"] {
-    margin-top: 3px;
-    transform: scale(1.3);
-    flex-shrink: 0;
-}
-
-.consent-checkbox label {
-    font-size: 13px;
-    color: #333;
-    cursor: pointer;
-    line-height: 1.5;
-    text-align: justify;
-}
-
-/* Select dropdown styling to match input fields */
-select.field-input {
-    border: none;
-    border-bottom: 1px solid #000 !important;
-    padding: 2px 5px;
-    font-family: inherit;
-    font-size: 12px;
-    background: transparent !important;
-    flex: 1;
-    min-width: 100px;
-    line-height: 1.2;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23000" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
-    background-repeat: no-repeat;
-    background-position: right 5px center;
-    background-size: 12px;
-    padding-right: 25px;
-}
-
-select.field-input:focus {
-    outline: none !important;
-    background-color: #f0f8ff !important;
-    border-bottom-color: #000 !important;
-    box-shadow: none !important;
-}
-
-/* Remove select validation styling */
-select.field-input:valid,
-select.field-input:invalid {
-    border-bottom: 1px solid #000 !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-}
-
-/* PDF Generation specific class */
-.pdf-generation {
-    width: 210mm !important;
-    max-width: 210mm !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    background: white !important;
-}
-
-.pdf-generation .field-input,
-.pdf-generation select.field-input,
-.pdf-generation .field-input:valid,
-.pdf-generation .field-input:invalid,
-.pdf-generation .field-input:required,
-.pdf-generation .field-input:-webkit-autofill,
-.pdf-generation .field-input:-webkit-autofill:hover,
-.pdf-generation .field-input:-webkit-autofill:focus,
-.pdf-generation .field-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px white inset !important;
-    box-shadow: 0 0 0 30px white inset !important;
-    background: white !important;
-    -webkit-text-fill-color: black !important;
-    color: black !important;
-    border-bottom: 1px solid #000 !important;
-}
-.pdf-generation {
-    width: 210mm !important;
-    max-width: 210mm !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    background: white !important;
-}
-
-.pdf-generation .field-input,
-.pdf-generation .field-input:valid,
-.pdf-generation .field-input:invalid,
-.pdf-generation .field-input:required,
-.pdf-generation .field-input:-webkit-autofill,
-.pdf-generation .field-input:-webkit-autofill:hover,
-.pdf-generation .field-input:-webkit-autofill:focus,
-.pdf-generation .field-input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px white inset !important;
-    box-shadow: 0 0 0 30px white inset !important;
-    background: white !important;
-    -webkit-text-fill-color: black !important;
-    color: black !important;
-    border-bottom: 1px solid #000 !important;
+/* PDF generation specific styles */
+.pdf-generation .form-navigation,
+.pdf-generation .form-actions,
+.pdf-generation .success-message,
+.pdf-generation .important-instructions,
+.pdf-generation .data-protection-section,
+.pdf-generation .instructions-section,
+.pdf-generation .consent-section {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 /* ========================================
    Mobile Responsiveness
    ======================================== */
 @media (max-width: 768px) {
+    .main-container {
+        margin: 0;
+        max-width: 100%;
+        box-shadow: none;
+    }
+    
+    .form-navigation {
+        padding: 15px;
+        position: relative;
+    }
+    
+    .form-tabs {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .tab-button {
+        min-width: auto;
+        width: 100%;
+    }
+    
     .container {
         margin: 0;
         max-width: 100%;
@@ -972,6 +1110,11 @@ select.field-input:invalid {
     .two-column {
         grid-template-columns: 1fr;
         gap: 10px;
+    }
+    
+    .four-column {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
     }
     
     .siblings-grid {
@@ -1040,124 +1183,36 @@ select.field-input:invalid {
         font-size: 16px;
     }
     
-    /* Mobile Pre-Submission Section */
-    .pre-submission-section {
-        padding: 20px 15px;
-    }
-    
-    .instruction-box,
-    .data-protection-notice {
+    /* Mobile Instructions */
+    .important-instructions,
+    .data-protection-section {
+        margin: 10px;
         padding: 15px;
-        font-size: 13px;
     }
     
-    .consent-checkbox {
-        flex-direction: column;
+    .important-instructions h3,
+    .data-protection-section h3 {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .four-column {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .form-tabs {
         gap: 5px;
     }
     
-    .consent-checkbox input[type="checkbox"] {
-        align-self: flex-start;
+    .tab-button {
+        padding: 12px 15px;
+        font-size: 12px;
     }
     
-    /* Mobile Footer Section */
-    .footer-section {
-        flex-direction: column;
-        gap: 15px;
-        padding: 15px 10px;
-    }
-    
-    .university-footer-logo {
-        width: 50px;
-        height: 50px;
-    }
-    
-    .iso-certification {
-        font-size: 9px;
-    }
-}
-
-/* ========================================
-   Tablet Responsiveness
-   ======================================== */
-@media (max-width: 1024px) and (min-width: 769px) {
-    .container {
-        max-width: 95%;
-    }
-    
-    .header-content {
-        flex-wrap: wrap;
-    }
-    
-    .contact-info {
-        width: 180px;
-        font-size: 7px;
-    }
-    
-    .triple-field .field-group {
-        min-width: 100px;
-    }
-}
-
-/* ========================================
-   High DPI/Retina Display Support
-   ======================================== */
-@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-    .university-logo img {
-        image-rendering: -webkit-optimize-contrast;
-        image-rendering: crisp-edges;
-    }
-}
-
-/* ========================================
-   Dark Mode Support (Optional)
-   ======================================== */
-@media (prefers-color-scheme: dark) {
-    body {
-        background: #2d2d2d;
-    }
-    
-    .container {
-        background: white; /* Keep form white for printing */
-        box-shadow: 0 0 20px rgba(255,255,255,0.1);
-    }
-    
-    .form-actions {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    }
-}
-
-/* ========================================
-   Accessibility Improvements
-   ======================================== */
-@media (prefers-reduced-motion: reduce) {
-    .btn {
-        transition: none;
-    }
-    
-    .btn:hover {
-        transform: none;
-    }
-}
-
-/* Focus indicators for keyboard navigation */
-.field-input:focus,
-.btn:focus {
-    outline: 2px solid #2a5298;
-    outline-offset: 2px;
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-    .field-input {
-        border-bottom-width: 2px;
-    }
-    
-    .photo-box {
-        border-width: 3px;
-    }
-    
-    .header {
-        border-bottom-width: 3px;
+    .tab-number {
+        width: 25px;
+        height: 25px;
+        font-size: 14px;
     }
 }

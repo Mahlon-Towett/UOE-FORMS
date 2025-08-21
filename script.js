@@ -1,694 +1,420 @@
-// University of Eldoret Student Form JavaScript with Firebase Integration
-// Enhanced with Cascading Kenyan Administrative Location Dropdowns
+// script.js - Main Application Script (Updated with All Fixes)
+// University of Eldoret Student Form - Complete Implementation
 
-let isSubmitting = false; // Prevent double submissions
-let kenyanLocationData = null; // Store loaded location data
+// ========================================
+// GLOBAL STATE VARIABLES
+// ========================================
+
+let isSubmitting = false;
 let isLocationDataLoaded = false;
+let locationData = null;
 
 // ========================================
-// GLOBAL FUNCTION DEFINITIONS (IMMEDIATE)
+// FIXED getFormDataForFirebase FUNCTION
 // ========================================
 
-// Define these functions immediately so they're available for HTML onclick handlers
-window.submitForm = function() {
-    console.log('Submit form called');
-    submitToFirebase();
-};
-
-window.clearForm = function() {
-    console.log('Clear form called');
-    if (confirm('Are you sure you want to clear all form data? This action cannot be undone.')) {
-        document.getElementById('studentForm').reset();
-        
-        document.querySelectorAll('.field-input, .location-dropdown').forEach(field => {
-            field.classList.remove('error', 'valid', 'location-error');
-        });
-        
-        // Reset location dropdowns
-        const subCountySelect = document.getElementById('subCounty');
-        const constituencySelect = document.getElementById('constituency');
-        const wardSelect = document.getElementById('ward');
-        
-        if (subCountySelect) resetDropdown(subCountySelect, 'Select county first');
-        if (constituencySelect) resetDropdown(constituencySelect, 'Select sub-county first');
-        if (wardSelect) resetDropdown(wardSelect, 'Select constituency first');
-        
-        const dataConsent = document.getElementById('dataConsent');
-        const dataRights = document.getElementById('dataRights');
-        if (dataConsent) dataConsent.checked = false;
-        if (dataRights) dataRights.checked = false;
-        
-        const successMessage = document.getElementById('successMessage');
-        if (successMessage) successMessage.style.display = 'none';
-        
-        localStorage.removeItem('uoe_student_form');
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-};
-
-window.printForm = function() {
-    console.log('Print form called');
-    if (!validateForm()) {
-        return;
-    }
+function getFormDataForFirebase() {
+    const now = new Date();
     
-    if (!checkDataConsent()) {
-        return;
-    }
+    // Safe field access function
+    const getFieldValue = (fieldId) => {
+        const element = document.getElementById(fieldId);
+        return element ? element.value.trim() : '';
+    };
     
-    const webElements = document.querySelectorAll('.form-actions, .success-message, .pre-submission-section');
-    webElements.forEach(el => el.style.display = 'none');
+    const getSelectValue = (fieldId) => {
+        const element = document.getElementById(fieldId);
+        return element ? element.value : '';
+    };
     
-    const printNotice = document.createElement('div');
-    printNotice.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #2a5298;
-        color: white;
-        padding: 15px;
-        border-radius: 10px;
-        z-index: 9999;
-        font-size: 14px;
-        max-width: 300px;
-    `;
-    printNotice.innerHTML = `
-        <strong>📋 Remember:</strong><br>
-        Print <strong>4 copies</strong> and attach passport photos on yellow background to each copy.
-    `;
-    document.body.appendChild(printNotice);
+    const getCheckedValue = (name) => {
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        return checked ? checked.value : '';
+    };
     
-    window.print();
+    // Get date of birth safely
+    const dobString = getFieldValue('dateOfBirth');
+    const age = dobString ? calculateAge(dobString) : null;
     
-    setTimeout(() => {
-        webElements.forEach(el => {
-            el.style.display = 'block';
-            if (el.classList.contains('pre-submission-section')) {
-                el.style.visibility = 'visible';
-                el.style.opacity = '1';
-            }
-        });
-        if (document.body.contains(printNotice)) {
-            document.body.removeChild(printNotice);
-        }
-    }, 1000);
-};
-
-window.downloadPDF = async function() {
-    console.log('Download PDF called');
-    if (!validateForm()) {
-        return;
-    }
+    // Get location hierarchy safely
+    const locationHierarchy = typeof getSelectedLocationHierarchy === 'function' ? 
+        getSelectedLocationHierarchy() : {};
     
-    if (!checkDataConsent()) {
-        return;
-    }
-
-    try {
-        showLoadingMessage('Generating PDF... Please wait');
-
-        const elementsToHide = document.querySelectorAll('.form-actions, .success-message, .pre-submission-section');
-        elementsToHide.forEach(el => el.style.display = 'none');
-
-        const container = document.querySelector('.container');
-        
-        const originalStyles = {
-            width: container.style.width,
-            maxWidth: container.style.maxWidth,
-            margin: container.style.margin,
-            boxShadow: container.style.boxShadow
-        };
-
-        container.classList.add('pdf-generation');
-        
-        const inputs = document.querySelectorAll('.field-input, .location-dropdown');
-        inputs.forEach(input => {
-            input.classList.remove('error', 'valid', 'location-error');
-            
-            input.style.webkitBoxShadow = '0 0 0 30px white inset';
-            input.style.boxShadow = '0 0 0 30px white inset';
-            input.style.background = 'white';
-            input.style.backgroundColor = 'white';
-            input.style.webkitTextFillColor = 'black';
-            input.style.color = 'black';
-            input.style.borderBottom = '1px solid #000';
-            input.style.borderColor = '#000';
-            
-            input.removeAttribute('data-validation-state');
-        });
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        const canvas = await html2canvas(container, {
-            scale: 1.5,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            width: 794,
-            height: container.offsetHeight,
-            scrollX: 0,
-            scrollY: 0,
-            onclone: function(clonedDoc) {
-                const clonedContainer = clonedDoc.querySelector('.container');
-                clonedContainer.style.width = '794px';
-                clonedContainer.style.maxWidth = '794px';
-                clonedContainer.style.margin = '0';
-                clonedContainer.style.boxShadow = 'none';
-                
-                const clonedInputs = clonedDoc.querySelectorAll('.field-input, .location-dropdown');
-                clonedInputs.forEach(input => {
-                    input.classList.remove('error', 'valid', 'location-error');
-                    input.style.webkitBoxShadow = '0 0 0 30px white inset';
-                    input.style.boxShadow = '0 0 0 30px white inset';
-                    input.style.background = 'white';
-                    input.style.backgroundColor = 'white';
-                    input.style.webkitTextFillColor = 'black';
-                    input.style.color = 'black';
-                    input.style.borderBottom = '1px solid #000';
-                    input.style.borderColor = '#000';
-                });
-            }
-        });
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        if (imgHeight <= 297) {
-            doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
-        } else {
-            const pageHeight = 297;
-            const totalPages = Math.ceil(imgHeight / pageHeight);
-            
-            for (let i = 0; i < totalPages; i++) {
-                if (i > 0) {
-                    doc.addPage();
-                }
-                
-                const yOffset = -i * pageHeight;
-                doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, yOffset, imgWidth, imgHeight);
+    // Get siblings array safely
+    const getSiblingsArray = () => {
+        const siblings = [];
+        for (let i = 1; i <= 6; i++) {
+            const siblingName = getFieldValue(`sibling${i}`);
+            if (siblingName) {
+                siblings.push(siblingName);
             }
         }
-
-        container.classList.remove('pdf-generation');
-        Object.keys(originalStyles).forEach(key => {
-            container.style[key] = originalStyles[key];
-        });
-
-        inputs.forEach(input => {
-            input.style.webkitBoxShadow = '';
-            input.style.boxShadow = '';
-            input.style.background = '';
-            input.style.backgroundColor = '';
-            input.style.webkitTextFillColor = '';
-            input.style.color = '';
-            input.style.borderBottom = '';
-            input.style.borderColor = '';
-        });
-
-        elementsToHide.forEach(el => {
-            el.style.display = 'block';
-            if (el.classList.contains('pre-submission-section')) {
-                el.style.visibility = 'visible';
-                el.style.opacity = '1';
+        return siblings;
+    };
+    
+    const getAgeGroup = (age) => {
+        if (!age) return null;
+        if (age <= 19) return "17-19";
+        if (age <= 22) return "20-22";
+        if (age <= 25) return "23-25";
+        return "26+";
+    };
+    
+    const calculateFormCompleteness = () => {
+        const allFields = document.querySelectorAll('#studentForm input, #studentForm select');
+        const filledFields = Array.from(allFields).filter(field => {
+            if (field.type === 'checkbox') {
+                return field.checked;
             }
-        });
-
-        hideLoadingMessage();
-
-        const formData = getFormDataForFirebase();
-        const fileName = generateFileName(formData.personalInfo.fullName);
-        doc.save(fileName);
-
-        showSuccessMessage();
-
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        alert('Error generating PDF. Please try again.');
-        
-        const loadingMsg = document.getElementById('loadingMessage');
-        if (loadingMsg) {
-            document.body.removeChild(loadingMsg);
-        }
-        
-        const elementsToHide = document.querySelectorAll('.form-actions, .success-message');
-        elementsToHide.forEach(el => el.style.display = 'block');
-        
-        const container = document.querySelector('.container');
-        container.classList.remove('pdf-generation');
-    }
-};
-
-console.log('✅ Global form functions defined immediately:', {
-    submitForm: typeof window.submitForm,
-    clearForm: typeof window.clearForm, 
-    printForm: typeof window.printForm,
-    downloadPDF: typeof window.downloadPDF
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    initializeForm();
-    setupEventListeners();
-    loadSavedData();
-    loadKenyanLocationData(); // Load location data from server
-    
-    // Test Firebase connection after a short delay
-    setTimeout(() => {
-        if (window.db) {
-            console.log('✅ Firebase Firestore connected successfully!');
-        } else {
-            console.error('❌ Firebase connection failed!');
-        }
-    }, 1500);
-});
-
-// ========================================
-// KENYAN LOCATION DATA MANAGEMENT
-// ========================================
-
-// Load Kenyan administrative data from JSON file on server
-async function loadKenyanLocationData() {
-    try {
-        console.log('📍 Loading Kenyan administrative location data...');
-        
-        // Update county dropdown to show loading state
-        const countySelect = document.getElementById('county');
-        countySelect.innerHTML = '<option value="">Loading counties...</option>';
-        countySelect.classList.add('loading-dropdown');
-        
-        // Fetch data from JSON file on your TrueHost server
-        // You'll need to upload your JSON file as "kenyan_locations.json"
-        const response = await fetch('./kenyan_locations.json', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            cache: 'default' // Cache the data for better performance
+            return field.value && field.value.trim() !== '';
         });
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log('✅ Location data loaded successfully');
-        
-        // Process and store the data
-        kenyanLocationData = processLocationData(data);
-        isLocationDataLoaded = true;
-        
-        // Initialize county dropdown
-        initializeCountyDropdown();
-        
-    } catch (error) {
-        console.error('❌ Error loading location data:', error);
-        
-        // Fallback to basic county list if JSON loading fails
-        console.log('📍 Using fallback county list...');
-        initializeFallbackCounties();
-    }
-}
+        return Math.round((filledFields.length / allFields.length) * 100);
+    };
 
-// Process the loaded JSON data into a usable structure
-function processLocationData(rawData) {
-    console.log('🔄 Processing location data...');
-    
-    let counties = {};
-    let subcounties = {};
-    let wards = {};
-    
-    // Find the data tables in the JSON structure
-    let countiesData = [];
-    let subcountiesData = [];
-    let wardsData = [];
-    
-    // Handle different JSON structures
-    if (rawData.tables) {
-        // If data is in tables array format
-        rawData.tables.forEach(table => {
-            if (table.name === 'counties' && table.data) {
-                countiesData = table.data;
-            } else if (table.name === 'subcounties' && table.data) {
-                subcountiesData = table.data;
-            } else if (table.name === 'station' && table.data) {
-                wardsData = table.data;
-            }
-        });
-    } else if (rawData.counties && rawData.subcounties && rawData.station) {
-        // If data is in direct object format
-        countiesData = rawData.counties;
-        subcountiesData = rawData.subcounties;
-        wardsData = rawData.station;
-    }
-    
-    // Process counties
-    countiesData.forEach(county => {
-        counties[county.county_id] = {
-            id: county.county_id,
-            name: county.county_name,
-            displayName: formatCountyName(county.county_name)
-        };
-    });
-    
-    // Process subcounties/constituencies
-    subcountiesData.forEach(subcounty => {
-        const countyId = subcounty.county_id;
-        if (!subcounties[countyId]) {
-            subcounties[countyId] = {};
-        }
-        subcounties[countyId][subcounty.subcounty_id] = {
-            id: subcounty.subcounty_id,
-            name: subcounty.constituency_name,
-            displayName: formatSubcountyName(subcounty.constituency_name),
-            countyId: countyId
-        };
-    });
-    
-    // Process wards
-    wardsData.forEach(ward => {
-        if (ward.subcounty_id && ward.subcounty_id !== "0" && ward.ward && ward.ward.trim() !== "") {
-            const subcountyId = ward.subcounty_id;
-            if (!wards[subcountyId]) {
-                wards[subcountyId] = {};
-            }
-            wards[subcountyId][ward.station_id] = {
-                id: ward.station_id,
-                name: ward.ward,
-                displayName: formatWardName(ward.ward),
-                subcountyId: subcountyId,
-                constituency: ward.constituency_name
-            };
-        }
-    });
-    
-    console.log(`✅ Processed ${Object.keys(counties).length} counties, ${Object.keys(subcounties).length} county groups, ${Object.keys(wards).length} subcounty groups`);
-    
     return {
-        counties: counties,
-        subcounties: subcounties,
-        wards: wards
+        // Metadata for analytics and tracking
+        metadata: {
+            submissionDate: now.toISOString(),
+            submissionYear: now.getFullYear(),
+            submissionMonth: now.getMonth() + 1,
+            submissionDay: now.getDate(),
+            formVersion: "2.5",
+            processingStatus: "completed",
+            ipAddress: null,
+            userAgent: navigator.userAgent,
+            dataIntegrity: true,
+            locationDataSource: isLocationDataLoaded ? "complete" : "fallback"
+        },
+
+        // Personal Information
+        personalInfo: {
+            fullName: getFieldValue('fullName').toUpperCase(),
+            admissionNumber: getFieldValue('admissionNumber'),
+            phoneNumber: getFieldValue('phoneNumber'),
+            nationalId: getFieldValue('nationalId'),
+            passportNo: getFieldValue('passportNo') || null,
+            birthCertNo: getFieldValue('birthCertNo') || null,
+            religion: getFieldValue('religion') || null,
+            nationality: getFieldValue('nationality'),
+            gender: getSelectValue('gender'),
+            ethnicBackground: getFieldValue('ethnicBackground') || null,
+            dateOfBirth: dobString,
+            placeOfBirth: getFieldValue('placeOfBirth'),
+            age: age
+        },
+
+        // Enhanced Location Information
+        locationInfo: {
+            // Administrative hierarchy (detailed)
+            administrative: locationHierarchy,
+            
+            // Traditional fields (for compatibility)
+            permanentResidence: getFieldValue('permanentResidence'),
+            location: getFieldValue('location'),
+            chiefName: getFieldValue('chiefName') || null,
+            division: getFieldValue('division') || null,
+            
+            // For backward compatibility, store the display names
+            county: locationHierarchy.county ? locationHierarchy.county.displayName : getSelectValue('county'),
+            subCounty: locationHierarchy.subCounty ? locationHierarchy.subCounty.displayName : getSelectValue('subCounty'),
+            constituency: locationHierarchy.constituency ? locationHierarchy.constituency.displayName : getSelectValue('constituency'),
+            ward: locationHierarchy.ward ? locationHierarchy.ward.displayName : getSelectValue('ward'),
+            
+            // FIXED: Added the missing fields that are now in HTML
+            nearestTown: getFieldValue('nearestTown') || null,
+            nearestPolice: getFieldValue('nearestPolice') || null
+            // REMOVED: homeAddress - no longer needed
+        },
+
+        // Marital Information
+        maritalInfo: {
+            status: getCheckedValue('maritalStatus') || null,
+            spouseDetails: getFieldValue('spouseDetails') || null,
+            spouseOccupation: getFieldValue('spouseOccupation') || null,
+            numberOfChildren: parseInt(getFieldValue('numberOfChildren')) || 0
+        },
+
+        // Family Information
+        familyInfo: {
+            father: {
+                fullName: getFieldValue('fatherName') || null,
+                status: getCheckedValue('fatherStatus') || null,
+                phoneNumber: getFieldValue('fatherPhone') || null,
+                nationalId: getFieldValue('fatherIdNo') || null,
+                occupation: getFieldValue('fatherOccupation') || null,
+                dateOfBirth: getFieldValue('fatherDob') || null
+            },
+            mother: {
+                fullName: getFieldValue('motherName') || null,
+                status: getCheckedValue('motherStatus') || null,
+                phoneNumber: getFieldValue('motherPhone') || null,
+                nationalId: getFieldValue('motherIdNo') || null,
+                occupation: getFieldValue('motherOccupation') || null,
+                dateOfBirth: getFieldValue('motherDob') || null
+            },
+            siblings: getSiblingsArray(),
+            siblingCount: getSiblingsArray().filter(s => s.trim()).length
+        },
+
+        // Emergency Contacts
+        emergencyContacts: [
+            {
+                priority: 1,
+                name: getFieldValue('emergency1Name') || null,
+                relationship: getFieldValue('emergency1Relationship') || null,
+                nationalId: getFieldValue('emergency1Id') || null,
+                phoneNumber: getFieldValue('emergency1Phone') || null,
+                address: getFieldValue('emergency1Address') || null
+            },
+            {
+                priority: 2,
+                name: getFieldValue('emergency2Name') || null,
+                relationship: getFieldValue('emergency2Relationship') || null,
+                nationalId: getFieldValue('emergency2Id') || null,
+                phoneNumber: getFieldValue('emergency2Phone') || null,
+                address: getFieldValue('emergency2Address') || null
+            }
+        ].filter(contact => contact.name),
+
+        // Academic Information
+        academicInfo: {
+            secondarySchool: {
+                name: getFieldValue('schoolAttended') || null,
+                address: getFieldValue('schoolAddress') || null
+            },
+            kcse: {
+                results: getFieldValue('kcseResults') || null,
+                additionalResults: getFieldValue('kcseResults2') || null,
+                indexNumber: getFieldValue('indexNumber') || null,
+                year: parseInt(getFieldValue('kcseYear')) || null
+            },
+            otherQualifications: getFieldValue('otherInstitutions') || null
+        },
+
+        // Interests & Activities
+        interests: {
+            sports: getFieldValue('sportsInterests') || null,
+            clubs: getFieldValue('clubsInterests') || null,
+            hobbies: getFieldValue('clubsInterests') ? 
+                getFieldValue('clubsInterests').split(',').map(s => s.trim()) : []
+        },
+
+        // Additional Information
+        additionalInfo: {
+            physicalImpairment: getFieldValue('physicalImpairment') || null,
+            specialNeeds: getFieldValue('physicalImpairment') ? 
+                getFieldValue('physicalImpairment').toLowerCase() !== 'none' : false,
+            additionalComments: getFieldValue('additionalInfo') || null
+        },
+
+        // Consent & Compliance
+        consent: {
+            dataProcessing: document.getElementById('dataConsent') ? document.getElementById('dataConsent').checked : false,
+            rightsAcknowledgment: document.getElementById('dataRights') ? document.getElementById('dataRights').checked : false,
+            consentDate: now.toISOString()
+        },
+
+        // Enhanced Analytics Fields
+        analytics: {
+            ageGroup: getAgeGroup(age),
+            academicYear: "2024/2025",
+            semester: "1",
+            locationCompleteness: typeof calculateLocationCompleteness === 'function' ? 
+                calculateLocationCompleteness(locationHierarchy) : 0,
+            genderCode: getSelectValue('gender') ? 
+                getSelectValue('gender').charAt(0).toUpperCase() : null,
+            formCompleteness: calculateFormCompleteness(),
+            dataQuality: isLocationDataLoaded ? "complete" : "basic"
+        }
     };
 }
 
-// Format county names for display (from UPPERCASE to Title Case)
-function formatCountyName(name) {
-    if (!name) return '';
-    return name.toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
-        .replace(/'/g, "'"); // Fix apostrophes
+// ========================================
+// LOCATION MANAGEMENT FUNCTIONS
+// ========================================
+
+async function loadLocationData() {
+    try {
+        const response = await fetch('./kenyan_locations.json');
+        locationData = await response.json();
+        isLocationDataLoaded = true;
+        populateCounties();
+        console.log('✅ Location data loaded successfully');
+    } catch (error) {
+        console.error('❌ Error loading location data:', error);
+        loadFallbackCounties();
+    }
 }
 
-// Format subcounty/constituency names for display
-function formatSubcountyName(name) {
-    if (!name) return '';
-    return name.toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
-        .replace(/'/g, "'")
-        .replace(/\//g, ' / '); // Add spaces around slashes
-}
-
-// Format ward names for display
-function formatWardName(name) {
-    if (!name) return '';
-    return name.toLowerCase()
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ')
-        .replace(/'/g, "'")
-        .replace(/\//g, ' / ')
-        .replace(/\\/g, ' / ')
-        .replace(/-/g, ' - '); // Add spaces around dashes
-}
-
-// Initialize county dropdown with loaded data
-function initializeCountyDropdown() {
+function populateCounties() {
     const countySelect = document.getElementById('county');
-    countySelect.classList.remove('loading-dropdown');
+    if (!countySelect || !locationData) return;
     
-    // Clear existing options
     countySelect.innerHTML = '<option value="">Select County</option>';
     
-    // Sort counties alphabetically by display name
-    const sortedCounties = Object.values(kenyanLocationData.counties)
-        .sort((a, b) => a.displayName.localeCompare(b.displayName));
-    
-    // Add county options
-    sortedCounties.forEach(county => {
+    Object.keys(locationData).sort().forEach(countyName => {
         const option = document.createElement('option');
-        option.value = county.id;
-        option.textContent = county.displayName;
-        option.setAttribute('data-original-name', county.name);
+        option.value = locationData[countyName].id;
+        option.textContent = countyName;
+        option.setAttribute('data-original-name', countyName);
         countySelect.appendChild(option);
     });
-    
-    console.log(`✅ County dropdown initialized with ${sortedCounties.length} counties`);
 }
 
-// Fallback county list if JSON loading fails
-function initializeFallbackCounties() {
+function loadFallbackCounties() {
     const countySelect = document.getElementById('county');
-    countySelect.classList.remove('loading-dropdown');
+    if (!countySelect) return;
     
     const fallbackCounties = [
-        'Baringo', 'Bomet', 'Bungoma', 'Busia', 'Elgeyo-Marakwet', 'Embu', 'Garissa', 
-        'Homa Bay', 'Isiolo', 'Kajiado', 'Kakamega', 'Kericho', 'Kiambu', 'Kilifi', 
-        'Kirinyaga', 'Kisii', 'Kisumu', 'Kitui', 'Kwale', 'Laikipia', 'Lamu', 'Machakos', 
-        'Makueni', 'Mandera', 'Marsabit', 'Meru', 'Migori', 'Mombasa', 'Murang\'a', 
-        'Nairobi', 'Nakuru', 'Nandi', 'Narok', 'Nyamira', 'Nyandarua', 'Nyeri', 
-        'Samburu', 'Siaya', 'Taita-Taveta', 'Tana River', 'Tharaka-Nithi', 'Trans Nzoia', 
-        'Turkana', 'Uasin Gishu', 'Vihiga', 'Wajir', 'West Pokot'
+        "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo-Marakwet", "Embu", "Garissa", "Homa Bay",
+        "Isiolo", "Kajiado", "Kakamega", "Kericho", "Kiambu", "Kilifi", "Kirinyaga", "Kisii",
+        "Kisumu", "Kitui", "Kwale", "Laikipia", "Lamu", "Machakos", "Makueni", "Mandera",
+        "Marsabit", "Meru", "Migori", "Mombasa", "Murang'a", "Nairobi", "Nakuru", "Nandi",
+        "Narok", "Nyamira", "Nyandarua", "Nyeri", "Samburu", "Siaya", "Taita-Taveta", "Tana River",
+        "Tharaka-Nithi", "Trans Nzoia", "Turkana", "Uasin Gishu", "Vihiga", "Wajir", "West Pokot"
     ];
     
     countySelect.innerHTML = '<option value="">Select County</option>';
-    
-    fallbackCounties.forEach((countyName, index) => {
+    fallbackCounties.forEach((county, index) => {
         const option = document.createElement('option');
-        option.value = String(index + 1).padStart(3, '0'); // Create synthetic ID
-        option.textContent = countyName;
+        option.value = index + 1;
+        option.textContent = county;
         option.setAttribute('data-fallback', 'true');
         countySelect.appendChild(option);
     });
     
-    console.log('✅ Fallback county dropdown initialized');
-    showLocationDataWarning();
+    console.log('⚠️ Loaded fallback counties');
 }
 
-// Show warning if using fallback data
-function showLocationDataWarning() {
-    const helpText = document.querySelector('#county').parentElement.querySelector('.location-help-text');
-    if (helpText) {
-        helpText.textContent = 'Using basic county list - subcounty data unavailable';
-        helpText.style.color = '#dc3545';
-    }
-}
-
-// ========================================
-// CASCADING DROPDOWN HANDLERS
-// ========================================
-
-// Handle county selection
 function handleCountyChange() {
     const countySelect = document.getElementById('county');
     const subCountySelect = document.getElementById('subCounty');
     const constituencySelect = document.getElementById('constituency');
     const wardSelect = document.getElementById('ward');
     
-    // Reset dependent dropdowns
     resetDropdown(subCountySelect, 'Select county first');
     resetDropdown(constituencySelect, 'Select sub-county first');
     resetDropdown(wardSelect, 'Select constituency first');
     
-    const selectedCountyId = countySelect.value;
+    if (!countySelect.value || !locationData) return;
     
-    if (!selectedCountyId) {
-        return;
+    const selectedCountyOption = countySelect.selectedOptions[0];
+    const countyName = selectedCountyOption.getAttribute('data-original-name') || selectedCountyOption.textContent;
+    
+    if (locationData[countyName] && locationData[countyName].subCounties) {
+        populateSubCounties(locationData[countyName].subCounties);
     }
-    
-    if (!isLocationDataLoaded || !kenyanLocationData) {
-        // If using fallback data, disable other dropdowns
-        disableDropdown(subCountySelect, 'County selected - subcounty data unavailable');
-        return;
-    }
-    
-    // Get subcounties for selected county
-    const subcountiesForCounty = kenyanLocationData.subcounties[selectedCountyId];
-    
-    if (!subcountiesForCounty || Object.keys(subcountiesForCounty).length === 0) {
-        disableDropdown(subCountySelect, 'No subcounties found for this county');
-        return;
-    }
-    
-    // Populate subcounty dropdown
-    populateSubCountyDropdown(subcountiesForCounty);
 }
 
-// Populate subcounty dropdown
-function populateSubCountyDropdown(subcounties) {
+function populateSubCounties(subCounties) {
     const subCountySelect = document.getElementById('subCounty');
+    if (!subCountySelect) return;
     
     subCountySelect.disabled = false;
-    subCountySelect.classList.add('loading-dropdown');
-    subCountySelect.innerHTML = '<option value="">Loading subcounties...</option>';
+    subCountySelect.innerHTML = '<option value="">Select Sub County</option>';
     
-    // Simulate brief loading for UX
-    setTimeout(() => {
-        subCountySelect.classList.remove('loading-dropdown');
-        subCountySelect.innerHTML = '<option value="">Select Sub County</option>';
-        
-        // Sort subcounties alphabetically
-        const sortedSubcounties = Object.values(subcounties)
-            .sort((a, b) => a.displayName.localeCompare(b.displayName));
-        
-        sortedSubcounties.forEach(subcounty => {
-            const option = document.createElement('option');
-            option.value = subcounty.id;
-            option.textContent = subcounty.displayName;
-            option.setAttribute('data-original-name', subcounty.name);
-            subCountySelect.appendChild(option);
-        });
-        
-        // Update help text
-        const helpText = subCountySelect.parentElement.querySelector('.location-help-text');
-        if (helpText) {
-            helpText.textContent = `${sortedSubcounties.length} subcounties available`;
-            helpText.style.color = '#28a745';
-        }
-        
-    }, 300);
+    Object.keys(subCounties).sort().forEach(subCountyName => {
+        const option = document.createElement('option');
+        option.value = subCounties[subCountyName].id;
+        option.textContent = subCountyName;
+        option.setAttribute('data-original-name', subCountyName);
+        subCountySelect.appendChild(option);
+    });
+    
+    updateHelpText(subCountySelect, 'Select your sub-county');
 }
 
-// Handle subcounty selection
 function handleSubCountyChange() {
+    const countySelect = document.getElementById('county');
     const subCountySelect = document.getElementById('subCounty');
     const constituencySelect = document.getElementById('constituency');
     const wardSelect = document.getElementById('ward');
     
-    // Reset dependent dropdowns
     resetDropdown(constituencySelect, 'Select sub-county first');
     resetDropdown(wardSelect, 'Select constituency first');
     
-    const selectedSubCountyId = subCountySelect.value;
+    if (!subCountySelect.value || !locationData) return;
     
-    if (!selectedSubCountyId || !isLocationDataLoaded) {
-        return;
+    const selectedCountyOption = countySelect.selectedOptions[0];
+    const countyName = selectedCountyOption.getAttribute('data-original-name') || selectedCountyOption.textContent;
+    
+    const selectedSubCountyOption = subCountySelect.selectedOptions[0];
+    const subCountyName = selectedSubCountyOption.getAttribute('data-original-name') || selectedSubCountyOption.textContent;
+    
+    if (locationData[countyName] && 
+        locationData[countyName].subCounties[subCountyName] && 
+        locationData[countyName].subCounties[subCountyName].constituencies) {
+        populateConstituencies(locationData[countyName].subCounties[subCountyName].constituencies);
     }
-    
-    // For now, constituency is the same as subcounty in our data structure
-    // Populate constituency dropdown (usually one per subcounty)
-    populateConstituencyDropdown(selectedSubCountyId);
 }
 
-// Populate constituency dropdown
-function populateConstituencyDropdown(subcountyId) {
+function populateConstituencies(constituencies) {
     const constituencySelect = document.getElementById('constituency');
-    const subCountySelect = document.getElementById('subCounty');
-    
-    // Get the selected subcounty info
-    const selectedOption = subCountySelect.querySelector(`option[value="${subcountyId}"]`);
-    const constituencyName = selectedOption ? selectedOption.textContent : 'Unknown';
+    if (!constituencySelect) return;
     
     constituencySelect.disabled = false;
     constituencySelect.innerHTML = '<option value="">Select Constituency</option>';
     
-    // Add the constituency (same as subcounty in most cases)
-    const option = document.createElement('option');
-    option.value = subcountyId;
-    option.textContent = constituencyName;
-    constituencySelect.appendChild(option);
+    Object.keys(constituencies).sort().forEach(constituencyName => {
+        const option = document.createElement('option');
+        option.value = constituencies[constituencyName].id;
+        option.textContent = constituencyName;
+        option.setAttribute('data-original-name', constituencyName);
+        constituencySelect.appendChild(option);
+    });
     
-    // Auto-select the constituency since there's typically only one per subcounty
-    constituencySelect.value = subcountyId;
-    
-    // Update help text
-    const helpText = constituencySelect.parentElement.querySelector('.location-help-text');
-    if (helpText) {
-        helpText.textContent = 'Constituency selected automatically';
-        helpText.style.color = '#28a745';
-    }
-    
-    // Trigger ward loading
-    handleConstituencyChange();
+    updateHelpText(constituencySelect, 'Select your constituency');
 }
 
-// Handle constituency selection
 function handleConstituencyChange() {
+    const countySelect = document.getElementById('county');
+    const subCountySelect = document.getElementById('subCounty');
     const constituencySelect = document.getElementById('constituency');
     const wardSelect = document.getElementById('ward');
     
     resetDropdown(wardSelect, 'Select constituency first');
     
-    const selectedConstituencyId = constituencySelect.value;
+    if (!constituencySelect.value || !locationData) return;
     
-    if (!selectedConstituencyId || !isLocationDataLoaded) {
-        return;
+    const selectedCountyOption = countySelect.selectedOptions[0];
+    const countyName = selectedCountyOption.getAttribute('data-original-name') || selectedCountyOption.textContent;
+    
+    const selectedSubCountyOption = subCountySelect.selectedOptions[0];
+    const subCountyName = selectedSubCountyOption.getAttribute('data-original-name') || selectedSubCountyOption.textContent;
+    
+    const selectedConstituencyOption = constituencySelect.selectedOptions[0];
+    const constituencyName = selectedConstituencyOption.getAttribute('data-original-name') || selectedConstituencyOption.textContent;
+    
+    if (locationData[countyName] && 
+        locationData[countyName].subCounties[subCountyName] &&
+        locationData[countyName].subCounties[subCountyName].constituencies[constituencyName] &&
+        locationData[countyName].subCounties[subCountyName].constituencies[constituencyName].wards) {
+        populateWards(locationData[countyName].subCounties[subCountyName].constituencies[constituencyName].wards);
     }
-    
-    // Get wards for selected constituency/subcounty
-    const wardsForConstituency = kenyanLocationData.wards[selectedConstituencyId];
-    
-    if (!wardsForConstituency || Object.keys(wardsForConstituency).length === 0) {
-        disableDropdown(wardSelect, 'No wards found for this constituency');
-        return;
-    }
-    
-    populateWardDropdown(wardsForConstituency);
 }
 
-// Populate ward dropdown
-function populateWardDropdown(wards) {
+function populateWards(wards) {
     const wardSelect = document.getElementById('ward');
+    if (!wardSelect) return;
     
     wardSelect.disabled = false;
-    wardSelect.classList.add('loading-dropdown');
-    wardSelect.innerHTML = '<option value="">Loading wards...</option>';
+    wardSelect.innerHTML = '<option value="">Select Ward (Optional)</option>';
     
-    setTimeout(() => {
-        wardSelect.classList.remove('loading-dropdown');
-        wardSelect.innerHTML = '<option value="">Select Ward (Optional)</option>';
-        
-        // Sort wards alphabetically
-        const sortedWards = Object.values(wards)
-            .sort((a, b) => a.displayName.localeCompare(b.displayName));
-        
-        sortedWards.forEach(ward => {
-            const option = document.createElement('option');
-            option.value = ward.id;
-            option.textContent = ward.displayName;
-            option.setAttribute('data-original-name', ward.name);
-            wardSelect.appendChild(option);
-        });
-        
-        // Update help text
-        const helpText = wardSelect.parentElement.querySelector('.location-help-text');
-        if (helpText) {
-            helpText.textContent = `${sortedWards.length} wards available`;
-            helpText.style.color = '#28a745';
-        }
-        
-    }, 300);
+    Object.keys(wards).sort().forEach(wardName => {
+        const option = document.createElement('option');
+        option.value = wards[wardName].id;
+        option.textContent = wardName;
+        option.setAttribute('data-original-name', wardName);
+        wardSelect.appendChild(option);
+    });
+    
+    updateHelpText(wardSelect, 'Optional: Select your ward');
 }
 
-// Utility functions for dropdown management
-function resetDropdown(selectElement, placeholder) {
-    selectElement.disabled = true;
-    selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+function resetDropdown(selectElement, message) {
+    if (!selectElement) return;
     
-    const helpText = selectElement.parentElement.querySelector('.location-help-text');
-    if (helpText) {
-        helpText.textContent = helpText.getAttribute('data-original-text') || 'Please select previous option first';
-        helpText.style.color = '#666';
-    }
-}
-
-function disableDropdown(selectElement, message) {
     selectElement.disabled = true;
     selectElement.innerHTML = `<option value="">${message}</option>`;
     
@@ -699,8 +425,250 @@ function disableDropdown(selectElement, message) {
     }
 }
 
+function updateHelpText(selectElement, message) {
+    const helpText = selectElement.parentElement.querySelector('.location-help-text');
+    if (helpText) {
+        helpText.textContent = message;
+        helpText.style.color = '#666';
+    }
+}
+
+function getSelectedLocationHierarchy() {
+    const countySelect = document.getElementById('county');
+    const subCountySelect = document.getElementById('subCounty');
+    const constituencySelect = document.getElementById('constituency');
+    const wardSelect = document.getElementById('ward');
+    
+    let hierarchy = {
+        county: null,
+        subCounty: null,
+        constituency: null,
+        ward: null
+    };
+    
+    // County information
+    if (countySelect && countySelect.value) {
+        const countyOption = countySelect.querySelector(`option[value="${countySelect.value}"]`);
+        hierarchy.county = {
+            id: countySelect.value,
+            name: countyOption ? countyOption.getAttribute('data-original-name') || countyOption.textContent : null,
+            displayName: countyOption ? countyOption.textContent : null,
+            isFallback: countyOption ? countyOption.hasAttribute('data-fallback') : false
+        };
+    }
+    
+    // SubCounty information
+    if (subCountySelect && subCountySelect.value && !subCountySelect.disabled) {
+        const subCountyOption = subCountySelect.querySelector(`option[value="${subCountySelect.value}"]`);
+        hierarchy.subCounty = {
+            id: subCountySelect.value,
+            name: subCountyOption ? subCountyOption.getAttribute('data-original-name') || subCountyOption.textContent : null,
+            displayName: subCountyOption ? subCountyOption.textContent : null,
+            countyId: countySelect.value
+        };
+    }
+    
+    // Constituency information
+    if (constituencySelect && constituencySelect.value && !constituencySelect.disabled) {
+        const constituencyOption = constituencySelect.querySelector(`option[value="${constituencySelect.value}"]`);
+        hierarchy.constituency = {
+            id: constituencySelect.value,
+            name: constituencyOption ? constituencyOption.getAttribute('data-original-name') || constituencyOption.textContent : null,
+            displayName: constituencyOption ? constituencyOption.textContent : null,
+            subcountyId: subCountySelect.value
+        };
+    }
+    
+    // Ward information
+    if (wardSelect && wardSelect.value && !wardSelect.disabled) {
+        const wardOption = wardSelect.querySelector(`option[value="${wardSelect.value}"]`);
+        hierarchy.ward = {
+            id: wardSelect.value,
+            name: wardOption ? wardOption.getAttribute('data-original-name') || wardOption.textContent : null,
+            displayName: wardOption ? wardOption.textContent : null,
+            constituencyId: constituencySelect.value
+        };
+    }
+    
+    return hierarchy;
+}
+
+function calculateLocationCompleteness(hierarchy) {
+    let score = 0;
+    let maxScore = 4;
+    
+    if (hierarchy.county) score += 1;
+    if (hierarchy.subCounty) score += 1;
+    if (hierarchy.constituency) score += 1;
+    if (hierarchy.ward) score += 1;
+    
+    return Math.round((score / maxScore) * 100);
+}
+
 // ========================================
-// FORM INITIALIZATION & EVENT LISTENERS
+// FORM VALIDATION FUNCTIONS
+// ========================================
+
+function validateForm() {
+    const requiredFields = [
+        'fullName', 'admissionNumber', 'phoneNumber', 'nationalId', 
+        'nationality', 'gender', 'dateOfBirth', 'placeOfBirth', 'permanentResidence', 
+        'location', 'county', 'emergency1Name', 'emergency1Relationship', 'emergency1Phone'
+    ];
+    
+    let isValid = true;
+    let missingFields = [];
+    
+    requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field && !field.value.trim()) {
+            field.classList.add('error');
+            if (field.classList.contains('location-dropdown')) {
+                field.classList.add('location-error');
+            }
+            isValid = false;
+            missingFields.push(getFieldLabel(fieldId));
+        } else if (field) {
+            field.classList.remove('error', 'location-error');
+            field.classList.add('valid');
+        }
+    });
+    
+    // Check if at least county is selected
+    const countySelect = document.getElementById('county');
+    if (!countySelect || !countySelect.value) {
+        if (countySelect) {
+            countySelect.classList.add('location-error');
+        }
+        isValid = false;
+        if (!missingFields.includes('County')) {
+            missingFields.push('County');
+        }
+    }
+    
+    if (!isValid) {
+        alert('Please fill in all required fields:\n\n' + missingFields.join('\n'));
+        const firstError = document.querySelector('.field-input.error, .location-dropdown.location-error');
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            firstError.focus();
+        }
+    }
+    
+    return isValid;
+}
+
+function validateField(field) {
+    if (field.hasAttribute('required')) {
+        if (field.value.trim() === '') {
+            field.classList.add('error');
+            field.classList.remove('valid');
+        } else {
+            field.classList.remove('error');
+            field.classList.add('valid');
+        }
+    }
+}
+
+function getFieldLabel(fieldId) {
+    const labels = {
+        'fullName': 'Full Name',
+        'admissionNumber': 'University Admission Number',
+        'phoneNumber': 'Phone Number',
+        'nationalId': 'National ID Number',
+        'nationality': 'Nationality',
+        'gender': 'Gender',
+        'dateOfBirth': 'Date of Birth',
+        'placeOfBirth': 'Place of Birth',
+        'permanentResidence': 'Permanent Residence',
+        'location': 'Location',
+        'county': 'County',
+        'emergency1Name': 'Emergency Contact 1 Name',
+        'emergency1Relationship': 'Emergency Contact 1 Relationship',
+        'emergency1Phone': 'Emergency Contact 1 Phone'
+    };
+    return labels[fieldId] || fieldId;
+}
+
+function checkDataConsent() {
+    const dataConsent = document.getElementById('dataConsent');
+    const dataRights = document.getElementById('dataRights');
+    
+    if (!dataConsent || !dataConsent.checked || !dataRights || !dataRights.checked) {
+        alert('❌ Please accept both data protection consent terms before proceeding.');
+        
+        const consentSection = document.querySelector('.data-protection-section');
+        if (consentSection) {
+            consentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            consentSection.style.border = '3px solid #dc3545';
+            consentSection.style.borderRadius = '10px';
+            consentSection.style.padding = '20px';
+            
+            setTimeout(() => {
+                consentSection.style.border = '';
+                consentSection.style.borderRadius = '';
+                consentSection.style.padding = '';
+            }, 5000);
+        }
+        
+        return false;
+    }
+    
+    return true;
+}
+
+// ========================================
+// UTILITY FUNCTIONS
+// ========================================
+
+function calculateAge(dateOfBirth) {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    return age;
+}
+
+function setupCheckboxExclusivity(name) {
+    const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                checkboxes.forEach(other => {
+                    if (other !== this) other.checked = false;
+                });
+            }
+        });
+    });
+}
+
+function showLoadingMessage(message) {
+    const overlay = document.getElementById('loadingOverlay');
+    const text = document.getElementById('loadingText');
+    
+    if (overlay) {
+        overlay.style.display = 'flex';
+    }
+    
+    if (text) {
+        text.textContent = message;
+    }
+}
+
+function hideLoadingMessage() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+// ========================================
+// FORM INITIALIZATION
 // ========================================
 
 function initializeForm() {
@@ -708,30 +676,22 @@ function initializeForm() {
     setupCheckboxExclusivity('fatherStatus');
     setupCheckboxExclusivity('motherStatus');
     
-    // Auto-save form data on input
-    document.getElementById('studentForm').addEventListener('input', saveFormData);
+    // Setup location dropdown event listeners
+    const countySelect = document.getElementById('county');
+    const subCountySelect = document.getElementById('subCounty');
+    const constituencySelect = document.getElementById('constituency');
     
-    // Store original help text
-    document.querySelectorAll('.location-help-text').forEach(text => {
-        text.setAttribute('data-original-text', text.textContent);
-    });
-    
-    // Ensure pre-submission section is visible
-    const preSubmissionSection = document.querySelector('.pre-submission-section');
-    if (preSubmissionSection) {
-        preSubmissionSection.style.display = 'block';
-        preSubmissionSection.style.visibility = 'visible';
-        preSubmissionSection.style.opacity = '1';
+    if (countySelect) {
+        countySelect.addEventListener('change', handleCountyChange);
     }
     
-    console.log('Form initialized successfully');
-}
-
-function setupEventListeners() {
-    // Location dropdown event listeners
-    document.getElementById('county').addEventListener('change', handleCountyChange);
-    document.getElementById('subCounty').addEventListener('change', handleSubCountyChange);
-    document.getElementById('constituency').addEventListener('change', handleConstituencyChange);
+    if (subCountySelect) {
+        subCountySelect.addEventListener('change', handleSubCountyChange);
+    }
+    
+    if (constituencySelect) {
+        constituencySelect.addEventListener('change', handleConstituencyChange);
+    }
     
     // Required field validation
     const requiredFields = ['fullName', 'admissionNumber', 'phoneNumber', 'nationalId', 
@@ -767,307 +727,17 @@ function setupEventListeners() {
             });
         }
     });
+    
+    // Load location data
+    loadLocationData();
+    
+    console.log('✅ Form initialized successfully');
 }
 
 // ========================================
-// FIREBASE INTEGRATION WITH ENHANCED LOCATION DATA
+// FIREBASE SUBMISSION FUNCTIONS
 // ========================================
 
-// Enhanced form data collection with detailed location hierarchy
-function getFormDataForFirebase() {
-    const now = new Date();
-    const dobString = document.getElementById('dateOfBirth').value;
-    const age = dobString ? calculateAge(dobString) : null;
-    
-    // Get detailed location information
-    const locationHierarchy = getSelectedLocationHierarchy();
-    
-    return {
-        // Metadata for analytics and tracking
-        metadata: {
-            submissionDate: now.toISOString(),
-            submissionYear: now.getFullYear(),
-            submissionMonth: now.getMonth() + 1,
-            submissionDay: now.getDate(),
-            formVersion: "2.5",
-            processingStatus: "completed",
-            ipAddress: null,
-            userAgent: navigator.userAgent,
-            dataIntegrity: true,
-            locationDataSource: isLocationDataLoaded ? "complete" : "fallback"
-        },
-
-        // Personal Information
-        personalInfo: {
-            fullName: document.getElementById('fullName').value.toUpperCase(),
-            admissionNumber: document.getElementById('admissionNumber').value,
-            phoneNumber: document.getElementById('phoneNumber').value,
-            nationalId: document.getElementById('nationalId').value,
-            passportNo: document.getElementById('passportNo').value || null,
-            birthCertNo: document.getElementById('birthCertNo').value || null,
-            religion: document.getElementById('religion').value || null,
-            nationality: document.getElementById('nationality').value,
-            gender: document.getElementById('gender').value,
-            ethnicBackground: document.getElementById('ethnicBackground').value || null,
-            dateOfBirth: dobString,
-            placeOfBirth: document.getElementById('placeOfBirth').value,
-            age: age
-        },
-
-        // Enhanced Location Information with Administrative Hierarchy
-        locationInfo: {
-            // Administrative hierarchy (detailed)
-            administrative: locationHierarchy,
-            
-            // Traditional fields (for compatibility)
-            permanentResidence: document.getElementById('permanentResidence').value,
-            location: document.getElementById('location').value,
-            chiefName: document.getElementById('chiefName').value || null,
-            division: document.getElementById('division').value || null,
-            
-            // For backward compatibility, store the display names
-            county: locationHierarchy.county ? locationHierarchy.county.displayName : null,
-            subCounty: locationHierarchy.subCounty ? locationHierarchy.subCounty.displayName : null,
-            constituency: locationHierarchy.constituency ? locationHierarchy.constituency.displayName : null,
-            ward: locationHierarchy.ward ? locationHierarchy.ward.displayName : null,
-            
-            // Additional location info
-            nearestTown: document.getElementById('nearestTown').value || null,
-            nearestPolice: document.getElementById('nearestPolice').value || null,
-            homeAddress: document.getElementById('homeAddress').value || null
-        },
-
-        // Marital Information
-        maritalInfo: {
-            status: getCheckedValue('maritalStatus') || null,
-            spouseDetails: document.getElementById('spouseDetails').value || null,
-            spouseOccupation: document.getElementById('spouseOccupation').value || null,
-            numberOfChildren: parseInt(document.getElementById('numberOfChildren').value) || 0
-        },
-
-        // Family Information
-        familyInfo: {
-            father: {
-                fullName: document.getElementById('fatherName').value || null,
-                status: getCheckedValue('fatherStatus') || null,
-                phoneNumber: document.getElementById('fatherPhone').value || null,
-                nationalId: document.getElementById('fatherIdNo').value || null,
-                occupation: document.getElementById('fatherOccupation').value || null,
-                dateOfBirth: document.getElementById('fatherDob').value || null
-            },
-            mother: {
-                fullName: document.getElementById('motherName').value || null,
-                status: getCheckedValue('motherStatus') || null,
-                phoneNumber: document.getElementById('motherPhone').value || null,
-                nationalId: document.getElementById('motherIdNo').value || null,
-                occupation: document.getElementById('motherOccupation').value || null,
-                dateOfBirth: document.getElementById('motherDob').value || null
-            },
-            siblings: getSiblingsArray(),
-            siblingCount: getSiblingsArray().filter(s => s.trim()).length
-        },
-
-        // Emergency Contacts
-        emergencyContacts: [
-            {
-                priority: 1,
-                name: document.getElementById('emergency1Name').value || null,
-                relationship: document.getElementById('emergency1Relationship').value || null,
-                nationalId: document.getElementById('emergency1Id').value || null,
-                phoneNumber: document.getElementById('emergency1Phone').value || null,
-                address: document.getElementById('emergency1Address').value || null
-            },
-            {
-                priority: 2,
-                name: document.getElementById('emergency2Name').value || null,
-                relationship: document.getElementById('emergency2Relationship').value || null,
-                nationalId: document.getElementById('emergency2Id').value || null,
-                phoneNumber: document.getElementById('emergency2Phone').value || null,
-                address: document.getElementById('emergency2Address').value || null
-            }
-        ].filter(contact => contact.name),
-
-        // Academic Information
-        academicInfo: {
-            secondarySchool: {
-                name: document.getElementById('schoolAttended').value || null,
-                address: document.getElementById('schoolAddress').value || null
-            },
-            kcse: {
-                results: document.getElementById('kcseResults').value || null,
-                additionalResults: document.getElementById('kcseResults2').value || null,
-                indexNumber: document.getElementById('indexNumber').value || null,
-                year: parseInt(document.getElementById('kcseYear').value) || null
-            },
-            otherQualifications: document.getElementById('otherInstitutions').value || null
-        },
-
-        // Interests & Activities
-        interests: {
-            sports: document.getElementById('sportsInterests').value || null,
-            clubs: document.getElementById('clubsInterests').value || null,
-            hobbies: document.getElementById('clubsInterests').value ? 
-                document.getElementById('clubsInterests').value.split(',').map(s => s.trim()) : []
-        },
-
-        // Additional Information
-        additionalInfo: {
-            physicalImpairment: document.getElementById('physicalImpairment').value || null,
-            specialNeeds: document.getElementById('physicalImpairment').value ? 
-                document.getElementById('physicalImpairment').value.toLowerCase() !== 'none' : false,
-            additionalComments: document.getElementById('additionalInfo').value || null
-        },
-
-        // Consent & Compliance
-        consent: {
-            dataProcessing: document.getElementById('dataConsent').checked,
-            rightsAcknowledgment: document.getElementById('dataRights').checked,
-            consentDate: now.toISOString()
-        },
-
-        // Enhanced Analytics Fields
-        analytics: {
-            ageGroup: getAgeGroup(age),
-            academicYear: "2024/2025",
-            semester: "1",
-            locationCompleteness: calculateLocationCompleteness(locationHierarchy),
-            genderCode: document.getElementById('gender').value ? 
-                document.getElementById('gender').value.charAt(0).toUpperCase() : null,
-            formCompleteness: calculateFormCompleteness(),
-            dataQuality: isLocationDataLoaded ? "complete" : "basic"
-        }
-    };
-}
-
-// Get selected location hierarchy with full details
-function getSelectedLocationHierarchy() {
-    const countySelect = document.getElementById('county');
-    const subCountySelect = document.getElementById('subCounty');
-    const constituencySelect = document.getElementById('constituency');
-    const wardSelect = document.getElementById('ward');
-    
-    let hierarchy = {
-        county: null,
-        subCounty: null,
-        constituency: null,
-        ward: null
-    };
-    
-    // County information
-    if (countySelect.value) {
-        const countyOption = countySelect.querySelector(`option[value="${countySelect.value}"]`);
-        hierarchy.county = {
-            id: countySelect.value,
-            name: countyOption ? countyOption.getAttribute('data-original-name') || countyOption.textContent : null,
-            displayName: countyOption ? countyOption.textContent : null,
-            isFallback: countyOption ? countyOption.hasAttribute('data-fallback') : false
-        };
-    }
-    
-    // SubCounty information
-    if (subCountySelect.value && !subCountySelect.disabled) {
-        const subCountyOption = subCountySelect.querySelector(`option[value="${subCountySelect.value}"]`);
-        hierarchy.subCounty = {
-            id: subCountySelect.value,
-            name: subCountyOption ? subCountyOption.getAttribute('data-original-name') || subCountyOption.textContent : null,
-            displayName: subCountyOption ? subCountyOption.textContent : null,
-            countyId: countySelect.value
-        };
-    }
-    
-    // Constituency information
-    if (constituencySelect.value && !constituencySelect.disabled) {
-        const constituencyOption = constituencySelect.querySelector(`option[value="${constituencySelect.value}"]`);
-        hierarchy.constituency = {
-            id: constituencySelect.value,
-            name: constituencyOption ? constituencyOption.getAttribute('data-original-name') || constituencyOption.textContent : null,
-            displayName: constituencyOption ? constituencyOption.textContent : null,
-            subcountyId: subCountySelect.value
-        };
-    }
-    
-    // Ward information
-    if (wardSelect.value && !wardSelect.disabled) {
-        const wardOption = wardSelect.querySelector(`option[value="${wardSelect.value}"]`);
-        hierarchy.ward = {
-            id: wardSelect.value,
-            name: wardOption ? wardOption.getAttribute('data-original-name') || wardOption.textContent : null,
-            displayName: wardOption ? wardOption.textContent : null,
-            constituencyId: constituencySelect.value
-        };
-    }
-    
-    return hierarchy;
-}
-
-// Calculate location completeness score
-function calculateLocationCompleteness(hierarchy) {
-    let score = 0;
-    let maxScore = 4;
-    
-    if (hierarchy.county) score += 1;
-    if (hierarchy.subCounty) score += 1;
-    if (hierarchy.constituency) score += 1;
-    if (hierarchy.ward) score += 1;
-    
-    return Math.round((score / maxScore) * 100);
-}
-
-// ========================================
-// EXISTING FORM FUNCTIONS (UPDATED)
-// ========================================
-
-// Updated validation to include location hierarchy
-function validateForm() {
-    const requiredFields = [
-        'fullName', 'admissionNumber', 'phoneNumber', 'nationalId', 
-        'nationality', 'gender', 'dateOfBirth', 'placeOfBirth', 'permanentResidence', 
-        'location', 'county', 'emergency1Name', 'emergency1Relationship', 'emergency1Phone'
-    ];
-    
-    let isValid = true;
-    let missingFields = [];
-    
-    requiredFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field && !field.value.trim()) {
-            field.classList.add('error');
-            if (field.classList.contains('location-dropdown')) {
-                field.classList.add('location-error');
-            }
-            isValid = false;
-            missingFields.push(getFieldLabel(fieldId));
-        } else if (field) {
-            field.classList.remove('error', 'location-error');
-            field.classList.add('valid');
-        }
-    });
-    
-    // Check if at least county is selected
-    const countySelect = document.getElementById('county');
-    if (!countySelect.value) {
-        countySelect.classList.add('location-error');
-        isValid = false;
-        if (!missingFields.includes('County')) {
-            missingFields.push('County');
-        }
-    }
-    
-    if (!isValid) {
-        alert('Please fill in all required fields:\n\n' + missingFields.join('\n'));
-        const firstError = document.querySelector('.field-input.error, .location-dropdown.location-error');
-        if (firstError) {
-            firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            firstError.focus();
-        }
-    }
-    
-    return isValid;
-}
-
-// [All other existing functions remain the same - just including the key ones that need updates]
-
-// Submit form data to Firebase (updated)
 async function submitToFirebase() {
     if (isSubmitting) {
         return;
@@ -1128,107 +798,6 @@ async function submitToFirebase() {
     }
 }
 
-// [Include all other existing functions: setupCheckboxExclusivity, validateField, getFieldLabel, 
-//  calculateAge, getAgeGroup, getSiblingsArray, calculateFormCompleteness, getCheckedValue, 
-//  updateSubmissionStats, showLoadingMessage, hideLoadingMessage, checkDataConsent, 
-//  showSuccessMessage, clearForm, submitForm, printForm, downloadPDF, generateFileName, 
-//  saveFormData, loadSavedData, etc.]
-
-// Helper functions (keeping existing ones)
-function setupCheckboxExclusivity(name) {
-    const checkboxes = document.querySelectorAll(`input[name="${name}"]`);
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            if (this.checked) {
-                checkboxes.forEach(other => {
-                    if (other !== this) other.checked = false;
-                });
-            }
-        });
-    });
-}
-
-function validateField(field) {
-    if (field.hasAttribute('required')) {
-        if (field.value.trim() === '') {
-            field.classList.add('error');
-            field.classList.remove('valid');
-        } else {
-            field.classList.remove('error');
-            field.classList.add('valid');
-        }
-    }
-}
-
-function getFieldLabel(fieldId) {
-    const labels = {
-        'fullName': 'Full Name',
-        'admissionNumber': 'University Admission Number',
-        'phoneNumber': 'Phone Number',
-        'nationalId': 'National ID Number',
-        'nationality': 'Nationality',
-        'gender': 'Gender',
-        'dateOfBirth': 'Date of Birth',
-        'placeOfBirth': 'Place of Birth',
-        'permanentResidence': 'Permanent Residence',
-        'location': 'Location',
-        'county': 'County',
-        'emergency1Name': 'Emergency Contact 1 Name',
-        'emergency1Relationship': 'Emergency Contact 1 Relationship',
-        'emergency1Phone': 'Emergency Contact 1 Phone'
-    };
-    return labels[fieldId] || fieldId;
-}
-
-function calculateAge(dateOfBirth) {
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    
-    return age;
-}
-
-function getAgeGroup(age) {
-    if (!age) return null;
-    if (age <= 19) return "17-19";
-    if (age <= 22) return "20-22";
-    if (age <= 25) return "23-25";
-    return "26+";
-}
-
-function getSiblingsArray() {
-    const siblings = [];
-    for (let i = 1; i <= 6; i++) {
-        const siblingName = document.getElementById(`sibling${i}`).value;
-        if (siblingName.trim()) {
-            siblings.push(siblingName.trim());
-        }
-    }
-    return siblings;
-}
-
-function calculateFormCompleteness() {
-    const allFields = document.querySelectorAll('#studentForm input, #studentForm select');
-    const filledFields = Array.from(allFields).filter(field => {
-        if (field.type === 'checkbox') {
-            return field.checked;
-        }
-        return field.value && field.value.trim() !== '';
-    });
-    
-    return Math.round((filledFields.length / allFields.length) * 100);
-}
-
-function getCheckedValue(name) {
-    const checked = document.querySelector(`input[name="${name}"]:checked`);
-    return checked ? checked.value : '';
-}
-
 async function updateSubmissionStats() {
     try {
         const { doc, getDoc, setDoc, updateDoc, increment, serverTimestamp } = 
@@ -1242,110 +811,295 @@ async function updateSubmissionStats() {
         
         const locationData = getSelectedLocationHierarchy();
         const county = locationData.county ? locationData.county.displayName : 'Unknown';
-        const gender = document.getElementById('gender').value;
-        const age = calculateAge(document.getElementById('dateOfBirth').value);
-        const ageGroup = getAgeGroup(age);
         
         if (statsDoc.exists()) {
             await updateDoc(statsDocRef, {
-                dailyCount: increment(1),
-                [`byCounty.${county}`]: increment(1),
-                [`byGender.${gender}`]: increment(1),
-                [`byAgeGroup.${ageGroup}`]: increment(1),
-                lastUpdated: serverTimestamp()
+                totalSubmissions: increment(1),
+                lastSubmission: serverTimestamp(),
+                [`counties.${county}`]: increment(1)
             });
         } else {
-            const initialStats = {
+            await setDoc(statsDocRef, {
                 date: dateKey,
-                dailyCount: 1,
-                byCounty: { [county]: 1 },
-                byGender: { [gender]: 1 },
-                byAgeGroup: { [ageGroup]: 1 },
-                created: serverTimestamp(),
-                lastUpdated: serverTimestamp()
-            };
-            await setDoc(statsDocRef, initialStats);
+                totalSubmissions: 1,
+                firstSubmission: serverTimestamp(),
+                lastSubmission: serverTimestamp(),
+                counties: {
+                    [county]: 1
+                }
+            });
         }
         
+        console.log('✅ Submission statistics updated');
     } catch (error) {
-        console.error('Error updating statistics:', error);
+        console.warn('⚠️ Could not update submission statistics:', error);
     }
-}
-
-function showLoadingMessage(message) {
-    const loadingMsg = document.createElement('div');
-    loadingMsg.id = 'loadingMessage';
-    loadingMsg.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(0,0,0,0.8);
-        color: white;
-        padding: 20px;
-        border-radius: 10px;
-        z-index: 9999;
-        font-size: 16px;
-        text-align: center;
-    `;
-    loadingMsg.innerHTML = `
-        <div style="margin-bottom: 10px;">📄</div>
-        <div>${message}</div>
-    `;
-    document.body.appendChild(loadingMsg);
-}
-
-function hideLoadingMessage() {
-    const loadingMsg = document.getElementById('loadingMessage');
-    if (loadingMsg) {
-        document.body.removeChild(loadingMsg);
-    }
-}
-
-function checkDataConsent() {
-    const dataConsent = document.getElementById('dataConsent');
-    const dataRights = document.getElementById('dataRights');
-    
-    if (!dataConsent.checked || !dataRights.checked) {
-        let missingConsent = [];
-        if (!dataConsent.checked) missingConsent.push('Data processing consent');
-        if (!dataRights.checked) missingConsent.push('Rights acknowledgment');
-        
-        alert('⚠️ Data Protection Consent Required\n\nYou must read and accept both data protection statements before submitting:\n\n• ' + missingConsent.join('\n• ') + '\n\nPlease scroll down and check both consent checkboxes.');
-        
-        const consentSection = document.querySelector('.data-protection-section');
-        consentSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        consentSection.style.border = '3px solid #dc3545';
-        consentSection.style.borderRadius = '10px';
-        consentSection.style.padding = '20px';
-        
-        setTimeout(() => {
-            consentSection.style.border = '';
-            consentSection.style.borderRadius = '';
-            consentSection.style.padding = '';
-        }, 5000);
-        
-        return false;
-    }
-    return true;
 }
 
 function showSuccessMessage() {
     const successMessage = document.getElementById('successMessage');
-    successMessage.innerHTML = `
-        <strong>✅ Form Submitted Successfully!</strong><br>
-        Your personal details have been recorded with detailed location information. You can now print or download a copy for your records.
-    `;
-    successMessage.style.display = 'block';
-    
-    setTimeout(() => {
-        successMessage.style.display = 'none';
-    }, 10000);
+    if (successMessage) {
+        successMessage.innerHTML = `
+            <h3>✅ Form Submitted Successfully!</h3>
+            <p>Your Student Personal Details form has been submitted to the University of Eldoret system.</p>
+            <p><strong>Important:</strong> You still need to complete and submit the Media Release form.</p>
+            <p>After completing both forms, you can print 4 copies of each for physical submission.</p>
+            <p>Thank you for choosing University of Eldoret!</p>
+        `;
+        successMessage.style.display = 'block';
+        
+        setTimeout(() => {
+            successMessage.style.display = 'none';
+        }, 15000);
+    }
 }
 
-function clearForm() {
+// ========================================
+// LEGACY GLOBAL FUNCTIONS (for compatibility)
+// ========================================
+
+// These are maintained for backward compatibility but the dual form manager handles the main functionality
+window.submitForm = function() {
+    console.log('📝 Legacy submitForm called - redirecting to dual form manager');
+    if (window.DualFormManager) {
+        return window.DualFormManager.submitBothForms();
+    } else {
+        return submitToFirebase();
+    }
+};
+
+window.printForm = function() {
+    console.log('🖨️ Legacy printForm called - redirecting to dual form manager');
+    if (window.DualFormManager) {
+        return window.DualFormManager.printBothForms();
+    } else {
+        return printSingleForm();
+    }
+};
+
+window.downloadPDF = function() {
+    console.log('📄 Legacy downloadPDF called - redirecting to dual form manager');
+    if (window.DualFormManager) {
+        return window.DualFormManager.downloadBothPDFs();
+    } else {
+        return downloadSinglePDF();
+    }
+};
+
+window.clearForm = function() {
+    console.log('🗑️ Legacy clearForm called - redirecting to dual form manager');
+    if (window.DualFormManager) {
+        return window.DualFormManager.clearAllForms();
+    } else {
+        return clearSingleForm();
+    }
+};
+
+// ========================================
+// SINGLE FORM FUNCTIONS (fallback)
+// ========================================
+
+function printSingleForm() {
+    if (!validateForm()) {
+        return;
+    }
+    
+    if (!checkDataConsent()) {
+        return;
+    }
+    
+    const webElements = document.querySelectorAll(`
+        .form-navigation,
+        .form-actions, 
+        .success-message,
+        .important-instructions,
+        .data-protection-section
+    `);
+    
+    webElements.forEach(el => {
+        if (el) {
+            el.style.display = 'none';
+        }
+    });
+    
+    const printNotice = document.createElement('div');
+    printNotice.id = 'printNotice';
+    printNotice.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #2a5298;
+        color: white;
+        padding: 15px;
+        border-radius: 10px;
+        z-index: 9999;
+        font-size: 14px;
+        max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    printNotice.innerHTML = `
+        <strong>📋 Remember:</strong><br>
+        Print <strong>4 copies</strong> and attach passport photos on yellow background to each copy.
+    `;
+    document.body.appendChild(printNotice);
+    
+    window.print();
+    
+    setTimeout(() => {
+        webElements.forEach(el => {
+            if (el) {
+                el.style.display = '';
+            }
+        });
+        
+        const notice = document.getElementById('printNotice');
+        if (notice && document.body.contains(notice)) {
+            document.body.removeChild(notice);
+        }
+    }, 1000);
+}
+
+async function downloadSinglePDF() {
+    if (!validateForm()) {
+        return;
+    }
+    
+    if (!checkDataConsent()) {
+        return;
+    }
+
+    try {
+        showLoadingMessage('Generating PDF... Please wait');
+
+        const webElements = document.querySelectorAll(`
+            .form-navigation,
+            .form-actions, 
+            .success-message,
+            .important-instructions,
+            .data-protection-section
+        `);
+        
+        webElements.forEach(el => {
+            if (el) {
+                el.style.display = 'none';
+            }
+        });
+
+        const container = document.querySelector('.container');
+        container.classList.add('pdf-generation');
+        
+        const inputs = document.querySelectorAll('.field-input, .location-dropdown');
+        inputs.forEach(input => {
+            input.classList.remove('error', 'valid', 'location-error');
+            input.style.webkitBoxShadow = '0 0 0 30px white inset';
+            input.style.boxShadow = '0 0 0 30px white inset';
+            input.style.background = 'white';
+            input.style.backgroundColor = 'white';
+            input.style.webkitTextFillColor = 'black';
+            input.style.color = 'black';
+            input.style.borderBottom = '1px solid #000';
+            input.removeAttribute('data-validation-state');
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const canvas = await html2canvas(container, {
+            scale: 1.5,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: 794,
+            height: container.scrollHeight * 1.5,
+            logging: false
+        });
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+        }
+
+        const fileName = generateFileName('Student_Personal_Details');
+        pdf.save(fileName);
+
+        hideLoadingMessage();
+        showPDFSuccessMessage();
+
+    } catch (error) {
+        console.error('❌ Error generating PDF:', error);
+        hideLoadingMessage();
+        alert('❌ Error generating PDF. Please try again or use the Print option.');
+    } finally {
+        const webElements = document.querySelectorAll(`
+            .form-navigation,
+            .form-actions, 
+            .success-message,
+            .important-instructions,
+            .data-protection-section
+        `);
+        
+        webElements.forEach(el => {
+            if (el) {
+                el.style.display = '';
+            }
+        });
+        
+        const container = document.querySelector('.container');
+        if (container) {
+            container.classList.remove('pdf-generation');
+        }
+    }
+}
+
+function generateFileName(baseFileName) {
+    const fullNameField = document.getElementById('fullName');
+    const admissionField = document.getElementById('admissionNumber');
+    
+    const name = fullNameField && fullNameField.value ? 
+        fullNameField.value.replace(/[^a-zA-Z0-9]/g, '_') : 'Student';
+    const admission = admissionField && admissionField.value ? 
+        admissionField.value.replace(/[^a-zA-Z0-9]/g, '_') : '';
+    
+    const timestamp = new Date().toISOString().split('T')[0];
+    
+    return `UoE_${baseFileName}_${name}_${admission}_${timestamp}.pdf`;
+}
+
+function showPDFSuccessMessage() {
+    const successMessage = document.getElementById('successMessage');
+    if (successMessage) {
+        successMessage.innerHTML = `
+            <h3>📄 PDF Generated Successfully!</h3>
+            <p>Your Student Personal Details form has been downloaded as a PDF.</p>
+            <p><strong>Remember:</strong> Print 4 copies and attach passport photos before submitting to the Registrar Academic office.</p>
+        `;
+        successMessage.style.display = 'block';
+        
+        setTimeout(() => {
+            successMessage.style.display = 'none';
+        }, 10000);
+    }
+}
+
+function clearSingleForm() {
     if (confirm('Are you sure you want to clear all form data? This action cannot be undone.')) {
-        document.getElementById('studentForm').reset();
+        const studentForm = document.getElementById('studentForm');
+        if (studentForm) {
+            studentForm.reset();
+        }
         
         document.querySelectorAll('.field-input, .location-dropdown').forEach(field => {
             field.classList.remove('error', 'valid', 'location-error');
@@ -1365,245 +1119,51 @@ function clearForm() {
         if (dataConsent) dataConsent.checked = false;
         if (dataRights) dataRights.checked = false;
         
-        document.getElementById('successMessage').style.display = 'none';
+        const successMessage = document.getElementById('successMessage');
+        if (successMessage) {
+            successMessage.style.display = 'none';
+        }
+        
         localStorage.removeItem('uoe_student_form');
         
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        console.log('✅ Form cleared');
     }
 }
 
-// Legacy function definitions for internal use
-function submitForm() {
-    return window.submitForm();
-}
-
-function clearForm() {
-    return window.clearForm();
-}
-
-function printForm() {
-    return window.printForm();
-}
-
-function downloadPDF() {
-    return window.downloadPDF();
-}
-
-// Print and PDF functions (keeping existing implementations)
-function printForm() {
-    if (!validateForm()) {
-        return;
-    }
-    
-    if (!checkDataConsent()) {
-        return;
-    }
-    
-    const webElements = document.querySelectorAll('.form-actions, .success-message, .pre-submission-section');
-    webElements.forEach(el => el.style.display = 'none');
-    
-    const printNotice = document.createElement('div');
-    printNotice.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #2a5298;
-        color: white;
-        padding: 15px;
-        border-radius: 10px;
-        z-index: 9999;
-        font-size: 14px;
-        max-width: 300px;
-    `;
-    printNotice.innerHTML = `
-        <strong>📋 Remember:</strong><br>
-        Print <strong>4 copies</strong> and attach passport photos on yellow background to each copy.
-    `;
-    document.body.appendChild(printNotice);
-    
-    window.print();
-    
-    setTimeout(() => {
-        webElements.forEach(el => {
-            el.style.display = 'block';
-            if (el.classList.contains('pre-submission-section')) {
-                el.style.visibility = 'visible';
-                el.style.opacity = '1';
-            }
-        });
-        document.body.removeChild(printNotice);
-    }, 1000);
-}
-
-// [Include full downloadPDF function and other utilities - keeping existing implementations]
-
-async function downloadPDF() {
-    if (!validateForm()) {
-        return;
-    }
-    
-    if (!checkDataConsent()) {
-        return;
-    }
-
-    try {
-        showLoadingMessage('Generating PDF... Please wait');
-
-        const elementsToHide = document.querySelectorAll('.form-actions, .success-message, .pre-submission-section');
-        elementsToHide.forEach(el => el.style.display = 'none');
-
-        const container = document.querySelector('.container');
-        
-        const originalStyles = {
-            width: container.style.width,
-            maxWidth: container.style.maxWidth,
-            margin: container.style.margin,
-            boxShadow: container.style.boxShadow
-        };
-
-        container.classList.add('pdf-generation');
-        
-        const inputs = document.querySelectorAll('.field-input, .location-dropdown');
-        inputs.forEach(input => {
-            input.classList.remove('error', 'valid', 'location-error');
-            
-            input.style.webkitBoxShadow = '0 0 0 30px white inset';
-            input.style.boxShadow = '0 0 0 30px white inset';
-            input.style.background = 'white';
-            input.style.backgroundColor = 'white';
-            input.style.webkitTextFillColor = 'black';
-            input.style.color = 'black';
-            input.style.borderBottom = '1px solid #000';
-            input.style.borderColor = '#000';
-            
-            input.removeAttribute('data-validation-state');
-        });
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-
-        const canvas = await html2canvas(container, {
-            scale: 1.5,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#ffffff',
-            width: 794,
-            height: container.offsetHeight,
-            scrollX: 0,
-            scrollY: 0,
-            onclone: function(clonedDoc) {
-                const clonedContainer = clonedDoc.querySelector('.container');
-                clonedContainer.style.width = '794px';
-                clonedContainer.style.maxWidth = '794px';
-                clonedContainer.style.margin = '0';
-                clonedContainer.style.boxShadow = 'none';
-                
-                const clonedInputs = clonedDoc.querySelectorAll('.field-input, .location-dropdown');
-                clonedInputs.forEach(input => {
-                    input.classList.remove('error', 'valid', 'location-error');
-                    input.style.webkitBoxShadow = '0 0 0 30px white inset';
-                    input.style.boxShadow = '0 0 0 30px white inset';
-                    input.style.background = 'white';
-                    input.style.backgroundColor = 'white';
-                    input.style.webkitTextFillColor = 'black';
-                    input.style.color = 'black';
-                    input.style.borderBottom = '1px solid #000';
-                    input.style.borderColor = '#000';
-                });
-            }
-        });
-
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        
-        const imgWidth = 210;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        
-        if (imgHeight <= 297) {
-            doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgWidth, imgHeight);
-        } else {
-            const pageHeight = 297;
-            const totalPages = Math.ceil(imgHeight / pageHeight);
-            
-            for (let i = 0; i < totalPages; i++) {
-                if (i > 0) {
-                    doc.addPage();
-                }
-                
-                const yOffset = -i * pageHeight;
-                doc.addImage(canvas.toDataURL('image/png'), 'PNG', 0, yOffset, imgWidth, imgHeight);
-            }
-        }
-
-        container.classList.remove('pdf-generation');
-        Object.keys(originalStyles).forEach(key => {
-            container.style[key] = originalStyles[key];
-        });
-
-        inputs.forEach(input => {
-            input.style.webkitBoxShadow = '';
-            input.style.boxShadow = '';
-            input.style.background = '';
-            input.style.backgroundColor = '';
-            input.style.webkitTextFillColor = '';
-            input.style.color = '';
-            input.style.borderBottom = '';
-            input.style.borderColor = '';
-        });
-
-        elementsToHide.forEach(el => {
-            el.style.display = 'block';
-            if (el.classList.contains('pre-submission-section')) {
-                el.style.visibility = 'visible';
-                el.style.opacity = '1';
-            }
-        });
-
-        hideLoadingMessage();
-
-        const formData = getFormDataForFirebase();
-        const fileName = generateFileName(formData.personalInfo.fullName);
-        doc.save(fileName);
-
-        showSuccessMessage();
-
-    } catch (error) {
-        console.error('Error generating PDF:', error);
-        alert('Error generating PDF. Please try again.');
-        
-        const loadingMsg = document.getElementById('loadingMessage');
-        if (loadingMsg) {
-            document.body.removeChild(loadingMsg);
-        }
-        
-        const elementsToHide = document.querySelectorAll('.form-actions, .success-message');
-        elementsToHide.forEach(el => el.style.display = 'block');
-        
-        const container = document.querySelector('.container');
-        container.classList.remove('pdf-generation');
-    }
-}
-
-function generateFileName(fullName) {
-    const name = fullName ? fullName.replace(/\s+/g, '_') : 'Student';
-    const date = new Date().toISOString().split('T')[0];
-    return `UoE_Student_Form_${name}_${date}.pdf`;
-}
+// ========================================
+// AUTO-SAVE FUNCTIONALITY
+// ========================================
 
 function saveFormData() {
-    try {
-        const formData = {};
-        const inputs = document.querySelectorAll('#studentForm input, #studentForm select');
+    const formData = {};
+    const form = document.getElementById('studentForm');
+    
+    if (form) {
+        const inputs = form.querySelectorAll('input, select');
         inputs.forEach(input => {
-            if (input.type === 'checkbox') {
-                formData[input.id] = input.checked;
-            } else {
-                formData[input.id] = input.value;
+            if (input.id) {
+                if (input.type === 'checkbox') {
+                    formData[input.id] = input.checked;
+                } else {
+                    formData[input.id] = input.value;
+                }
             }
         });
         
-        localStorage.setItem('uoe_student_form', JSON.stringify(formData));
-    } catch (error) {
-        console.log('Unable to save form data:', error);
+        // Save consent data
+        const dataConsent = document.getElementById('dataConsent');
+        const dataRights = document.getElementById('dataRights');
+        
+        if (dataConsent) formData.dataConsent = dataConsent.checked;
+        if (dataRights) formData.dataRights = dataRights.checked;
+        
+        try {
+            localStorage.setItem('uoe_student_form', JSON.stringify(formData));
+        } catch (error) {
+            console.warn('Could not save form data:', error);
+        }
     }
 }
 
@@ -1611,66 +1171,51 @@ function loadSavedData() {
     try {
         const savedData = localStorage.getItem('uoe_student_form');
         if (savedData) {
-            const data = JSON.parse(savedData);
-            Object.keys(data).forEach(key => {
-                const field = document.getElementById(key);
+            const formData = JSON.parse(savedData);
+            
+            Object.keys(formData).forEach(fieldId => {
+                const field = document.getElementById(fieldId);
                 if (field) {
                     if (field.type === 'checkbox') {
-                        field.checked = data[key] === true;
+                        field.checked = formData[fieldId];
                     } else {
-                        field.value = data[key] || '';
+                        field.value = formData[fieldId];
                     }
                 }
             });
             
-            // Trigger location cascade if county was saved
-            if (data.county) {
-                setTimeout(() => {
-                    handleCountyChange();
-                    if (data.subCounty) {
-                        setTimeout(() => {
-                            document.getElementById('subCounty').value = data.subCounty;
-                            handleSubCountyChange();
-                            if (data.constituency) {
-                                setTimeout(() => {
-                                    document.getElementById('constituency').value = data.constituency;
-                                    handleConstituencyChange();
-                                    if (data.ward) {
-                                        setTimeout(() => {
-                                            document.getElementById('ward').value = data.ward;
-                                        }, 300);
-                                    }
-                                }, 300);
-                            }
-                        }, 300);
-                    }
-                }, 500);
-            }
+            console.log('✅ Saved form data restored');
         }
     } catch (error) {
-        console.log('Unable to load saved data:', error);
+        console.warn('Could not load saved form data:', error);
     }
 }
 
 // ========================================
-// FUNCTION VERIFICATION AND TESTING
+// INITIALIZATION
 // ========================================
 
-// Verify all functions are properly defined
-setTimeout(() => {
-    console.log('🔍 Function verification:', {
-        submitForm: typeof window.submitForm,
-        clearForm: typeof window.clearForm,
-        printForm: typeof window.printForm,
-        downloadPDF: typeof window.downloadPDF,
-        validateForm: typeof validateForm,
-        checkDataConsent: typeof checkDataConsent
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeForm();
+        loadSavedData();
+        
+        // Auto-save every 30 seconds
+        setInterval(saveFormData, 30000);
+        
+        // Save on page unload
+        window.addEventListener('beforeunload', saveFormData);
     });
+} else {
+    initializeForm();
+    loadSavedData();
     
-    // Test that functions can be called without errors
-    try {
-        console.log('✅ All global functions are accessible and ready');
-    } catch (error) {
-        console.error('❌ Function verification failed:', error);
-    }
-}, 1000);
+    // Auto-save every 30 seconds
+    setInterval(saveFormData, 30000);
+    
+    // Save on page unload
+    window.addEventListener('beforeunload', saveFormData);
+}
+
+console.log('✅ Main script loaded with all fixes applied');

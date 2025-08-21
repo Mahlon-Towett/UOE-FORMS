@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Personal Details Form - University of Eldoret</title>
-    <link rel="stylesheet" href="styles.css?v=2.5">
+    <title>University of Eldoret - Student Registration Forms</title>
+    <link rel="stylesheet" href="styles.css">
     
-    <!-- Firebase SDK v10 (modular) -->
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
         import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
         import { getAnalytics } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
-        
-        // Your Firebase configuration
+
         const firebaseConfig = {
             apiKey: "AIzaSyCQ4B3CdAJ4WoFu-bPlZQtLgdpHvkXTK0w",
             authDomain: "uoe-student-form.firebaseapp.com",
@@ -22,1058 +21,690 @@
             appId: "1:1023597600972:web:4a79cca07365059d392269",
             measurementId: "G-HS1FV2ZS80"
         };
-        
-        // Initialize Firebase
+
         const app = initializeApp(firebaseConfig);
-        
-        // Make Firebase services available globally
         window.db = getFirestore(app);
         window.analytics = getAnalytics(app);
         
-        console.log('🔥 Firebase initialized successfully');
+        console.log('✅ Firebase initialized successfully');
     </script>
     
-    <!-- PDF generation libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    
-    <!-- Firestore operations (modular SDK) -->
-    <script type="module">
-        import { collection, addDoc, updateDoc, increment, doc, getDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-        
-        // Make Firestore functions available globally for our modules
-        window.firestoreFunctions = {
-            collection,
-            addDoc,
-            updateDoc,
-            increment,
-            doc,
-            getDoc,
-            serverTimestamp
-        };
-        
-        console.log('🔥 Firestore functions loaded');
-    </script>
-    
-    <!-- Location Dropdown Enhancement Styles -->
-    <style>
-        .location-field-group {
-            margin-bottom: 15px;
-        }
-        
-        .location-dropdown {
-            width: 100% !important;
-            margin-top: 5px;
-            background-color: white;
-            position: relative;
-        }
-        
-        .loading-dropdown {
-            background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="%23666" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v6M12 17v6M4.22 4.22l4.24 4.24M15.54 15.54l4.24 4.24M1 12h6M17 12h6M4.22 19.78l4.24-4.24M15.54 8.46l4.24-4.24"/></svg>') !important;
-            background-size: 16px !important;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        .location-help-text {
-            font-size: 10px;
-            color: #666;
-            margin-top: 2px;
-            font-style: italic;
-        }
-        
-        .location-error {
-            background-color: #ffe6e6 !important;
-            border-bottom-color: #dc3545 !important;
-        }
-    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <div class="header">
-            <div class="header-content">
-                <div class="university-logo">
-                    <img src="logo.png" alt="University of Eldoret Logo" id="universityLogo" onerror="handleLogoError()">
-                </div>
-                
-                <div class="header-center">
-                    <h1>University of<br>Eldoret</h1>
-                    <p class="tagline">Excellence in Innovation and Development</p>
-                    <h2>OFFICE OF DEPUTY VICE-CHANCELLOR (ASA)<br>REGISTRAR ACADEMIC</h2>
-                </div>
-                
-                <div class="contact-info">
-                    <div class="reference">UoE/J/2</div>
-                    <div>P. O. Box 1125 - 30100, Eldoret, Kenya Tel:</div>
-                    <div>+254 53 2063257 / 2033212/13 Ext. 2552/3</div>
-                    <div>Mob: 0736 495550; Fax: +254 53 206 3257 E-</div>
-                    <div>mail: registraracademic@uoeld.ac.ke</div>
-                    <div>Website: www.uoeld.ac.ke</div>
-                </div>
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Form Selection Navigation -->
+        <div class="form-navigation">
+            <div class="nav-header">
+                <h1>University of Eldoret - Student Registration</h1>
+                <p>Complete both forms to proceed with registration</p>
             </div>
             
-            <div class="photo-box">
-                <div class="photo-placeholder">
-                    Affix your<br>
-                    Passport size<br>
-                    Photo here
+            <div class="form-tabs">
+                <button class="tab-button active" onclick="showForm('student-form')" id="student-tab">
+                    <span class="tab-number">1</span>
+                    Student Personal Details
+                    <span class="tab-status" id="student-status">❌ Incomplete</span>
+                </button>
+                <button class="tab-button" onclick="showForm('media-consent')" id="media-tab">
+                    <span class="tab-number">2</span>
+                    Media Release Form
+                    <span class="tab-status" id="media-status">❌ Incomplete</span>
+                </button>
+            </div>
+            
+            <div class="completion-status">
+                <div class="status-indicator" id="overall-status">
+                    <span class="status-icon">❌</span>
+                    <span class="status-text">Complete both forms to proceed</span>
                 </div>
             </div>
+        </div>
+
+        <!-- Student Personal Details Form -->
+        <div class="form-container active" id="student-form">
+            <div class="container">
+                <!-- Header Section -->
+                <div class="header">
+                    <div class="header-content">
+                        <div class="university-logo">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%232a5298'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-size='16' font-weight='bold'%3EUoE%3C/text%3E%3C/svg%3E" alt="UoE Logo" width="100" height="100">
+                        </div>
+                        
+                        <div class="header-center">
+                            <h1>University of Eldoret</h1>
+                            <p class="tagline">Excellence in Innovation and Development</p>
+                            <div class="office-details">
+                                <p><strong>OFFICE OF DEPUTY VICE-CHANCELLOR (ASA)</strong></p>
+                                <p><strong>REGISTRAR ACADEMIC</strong></p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-info">
+                            <p><strong>UoE/42</strong></p>
+                            <p>P.O Box 1125 - 30100, Eldoret, Kenya Tel:</p>
+                            <p>+254 53 2063257 / 2033213-15 Ext: 2525</p>
+                            <p>Mobile: +254 711 631 524 +254 734 316 139</p>
+                            <p>Email: registrar.academic@uoeld.ac.ke</p>
+                            <p>Website: www.uoeld.ac.ke</p>
+                        </div>
+                    </div>
+                    
+                    <div class="photo-box">
+                        <p>Affix your<br>Passport size<br>Photo here</p>
+                    </div>
+                </div>
+
+                <!-- Form Content -->
+                <div class="form-content">
+                    <h2 class="form-title">STUDENT'S PERSONAL DETAILS</h2>
+                    
+                    <div class="instruction-text">
+                        Information provided in this Form is intended to help the office of the Registrar Academic understand the student better. It will be used for purposes of improving the student's welfare while at the University. (To be completed in quadruple (4 copies) and in capital letters. <strong>Attach a coloured passport size photograph taken on a yellow background on each form.</strong>
+                    </div>
+                    
+                    <div class="note-text">
+                        <strong>Note:</strong> You are required to enter through the link below the same information filled in hard copy forms. http://support.uoeld.ac.ke/admissions/
+                    </div>
+
+                    <form id="studentForm">
+                        <!-- Personal Information Fields -->
+                        <div class="form-field">
+                            <span class="field-number">1.</span>
+                            <span class="field-label">Full Name:</span>
+                            <input type="text" class="field-input name-input" id="fullName" required>
+                            <div class="name-labels">
+                                <span class="sub-label">(Surname or last Name)</span>
+                                <span class="sub-label">(Other Names)</span>
+                            </div>
+                        </div>
+
+                        <div class="two-column">
+                            <div class="form-field">
+                                <span class="field-number">2.</span>
+                                <span class="field-label">University Admission Number</span>
+                                <input type="text" class="field-input" id="admissionNumber" required>
+                            </div>
+                            <div class="form-field">
+                                <span class="field-label">Phone No.</span>
+                                <input type="tel" class="field-input" id="phoneNumber" required>
+                            </div>
+                        </div>
+
+                        <div class="form-field triple-field">
+                            <span class="field-number">3.</span>
+                            <div class="field-group">
+                                <span class="field-label">National ID No.</span>
+                                <input type="text" class="field-input" id="nationalId" required>
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">Passport No.</span>
+                                <input type="text" class="field-input" id="passportNo">
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">or Birth Certificate No. if under 18 years</span>
+                                <input type="text" class="field-input" id="birthCertNo">
+                            </div>
+                        </div>
+
+                        <div class="form-field triple-field">
+                            <span class="field-number">4.</span>
+                            <div class="field-group">
+                                <span class="field-label">Religion</span>
+                                <input type="text" class="field-input" id="religion">
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">Nationality</span>
+                                <input type="text" class="field-input" id="nationality" required>
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">Gender</span>
+                                <select class="field-input" id="gender" required>
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">5.</span>
+                            <span class="field-label">Ethnic Background</span>
+                            <input type="text" class="field-input" id="ethnicBackground">
+                        </div>
+
+                        <div class="two-column">
+                            <div class="form-field">
+                                <span class="field-number">6.</span>
+                                <span class="field-label">Date of Birth</span>
+                                <input type="date" class="field-input" id="dateOfBirth" required>
+                            </div>
+                            <div class="form-field">
+                                <span class="field-label">Place of Birth:</span>
+                                <input type="text" class="field-input" id="placeOfBirth" required>
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">7.</span>
+                            <span class="field-label">Place of Permanent Residence: Village/Town</span>
+                            <input type="text" class="field-input" id="permanentResidence" required>
+                        </div>
+
+                        <!-- Updated Location Section -->
+                        <div class="form-field">
+                            <span class="field-number">8.</span>
+                            <span class="field-label">Location Details</span>
+                        </div>
+                        
+                        <div class="form-field four-column" style="margin-left: 25px;">
+                            <div class="field-group">
+                                <span class="field-label">Location</span>
+                                <input type="text" class="field-input" id="location" required>
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">Name of Chief</span>
+                                <input type="text" class="field-input" id="chiefName">
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">Nearest Town</span>
+                                <input type="text" class="field-input" id="nearestTown">
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">Nearest Police Station</span>
+                                <input type="text" class="field-input" id="nearestPolice">
+                            </div>
+                        </div>
+
+                        <!-- Administrative Location Fields -->
+                        <div class="form-field">
+                            <span class="field-number">9.</span>
+                            <span class="field-label">Administrative Location (Select in order):</span>
+                        </div>
+                        
+                        <div class="form-field triple-field" style="margin-left: 25px;">
+                            <div class="field-group location-field-group">
+                                <span class="field-label">County</span>
+                                <select class="location-dropdown" id="county" required>
+                                    <option value="">Loading counties...</option>
+                                </select>
+                                <span class="location-help-text">Select your county first</span>
+                            </div>
+                            <div class="field-group location-field-group">
+                                <span class="field-label">Sub County</span>
+                                <select class="location-dropdown" id="subCounty" disabled required>
+                                    <option value="">Select county first</option>
+                                </select>
+                                <span class="location-help-text">Will populate after county selection</span>
+                            </div>
+                            <div class="field-group location-field-group">
+                                <span class="field-label">Constituency</span>
+                                <select class="location-dropdown" id="constituency" disabled required>
+                                    <option value="">Select sub-county first</option>
+                                </select>
+                                <span class="location-help-text">Will populate after sub-county selection</span>
+                            </div>
+                        </div>
+
+                        <div class="form-field" style="margin-left: 25px;">
+                            <div class="field-group location-field-group" style="max-width: 300px;">
+                                <span class="field-label">Ward</span>
+                                <select class="location-dropdown" id="ward" disabled>
+                                    <option value="">Select constituency first</option>
+                                </select>
+                                <span class="location-help-text">Optional: Will populate after constituency selection</span>
+                            </div>
+                        </div>
+
+                        <!-- Division field for compatibility -->
+                        <div class="form-field" style="margin-left: 25px;">
+                            <span class="field-label">Division (if known)</span>
+                            <input type="text" class="field-input" id="division" placeholder="Optional administrative division">
+                        </div>
+
+                        <!-- Marital Status -->
+                        <div class="form-field">
+                            <span class="field-number">10.</span>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="maritalStatus" value="Married" id="married">
+                                    <label for="married">Married</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="maritalStatus" value="Single" id="single">
+                                    <label for="single">Single</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="maritalStatus" value="Divorced" id="divorced">
+                                    <label for="divorced">Divorced</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="maritalStatus" value="Widowed" id="widowed">
+                                    <label for="widowed">Widowed</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-field indented">
+                            <span class="field-label">Name and Address of Spouse (if married)</span>
+                            <input type="text" class="field-input" id="spouseDetails">
+                        </div>
+
+                        <div class="two-column indented">
+                            <div class="form-field">
+                                <span class="field-label">Occupation of Spouse</span>
+                                <input type="text" class="field-input" id="spouseOccupation">
+                            </div>
+                            <div class="form-field">
+                                <span class="field-label">Number of Children:</span>
+                                <input type="number" class="field-input" id="numberOfChildren" min="0">
+                            </div>
+                        </div>
+
+                        <!-- Continue with all other fields... [Due to length, I'll include the key sections] -->
+                        
+                        <!-- Father's Information -->
+                        <div class="form-field">
+                            <span class="field-number">11.</span>
+                            <span class="field-label">Full Name of Father</span>
+                            <input type="text" class="field-input father-name" id="fatherName">
+                            <div class="status-checkboxes">
+                                <div class="checkbox-item inline">
+                                    <input type="checkbox" name="fatherStatus" value="Alive" id="fatherAlive">
+                                    <label for="fatherAlive">Alive</label>
+                                </div>
+                                <div class="checkbox-item inline">
+                                    <input type="checkbox" name="fatherStatus" value="Deceased" id="fatherDeceased">
+                                    <label for="fatherDeceased">Deceased</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-field indented two-part">
+                            <div class="field-group">
+                                <span class="field-label">Phone No.</span>
+                                <input type="tel" class="field-input" id="fatherPhone">
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">National ID/Passport No.</span>
+                                <input type="text" class="field-input" id="fatherIdNo">
+                            </div>
+                        </div>
+
+                        <div class="two-column indented">
+                            <div class="form-field">
+                                <span class="field-label">Occupation of Father</span>
+                                <input type="text" class="field-input" id="fatherOccupation">
+                            </div>
+                            <div class="form-field">
+                                <span class="field-label">Date of Birth</span>
+                                <input type="date" class="field-input" id="fatherDob">
+                            </div>
+                        </div>
+
+                        <!-- Mother's Information -->
+                        <div class="form-field">
+                            <span class="field-number">12.</span>
+                            <span class="field-label">Full Name of Mother</span>
+                            <input type="text" class="field-input mother-name" id="motherName">
+                            <div class="status-checkboxes">
+                                <div class="checkbox-item inline">
+                                    <input type="checkbox" name="motherStatus" value="Alive" id="motherAlive">
+                                    <label for="motherAlive">Alive</label>
+                                </div>
+                                <div class="checkbox-item inline">
+                                    <input type="checkbox" name="motherStatus" value="Deceased" id="motherDeceased">
+                                    <label for="motherDeceased">Deceased</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-field indented two-part">
+                            <div class="field-group">
+                                <span class="field-label">Phone No.</span>
+                                <input type="tel" class="field-input" id="motherPhone">
+                            </div>
+                            <div class="field-group">
+                                <span class="field-label">National ID/Passport No.</span>
+                                <input type="text" class="field-input" id="motherIdNo">
+                            </div>
+                        </div>
+
+                        <div class="two-column indented">
+                            <div class="form-field">
+                                <span class="field-label">Occupation of Mother</span>
+                                <input type="text" class="field-input" id="motherOccupation">
+                            </div>
+                            <div class="form-field">
+                                <span class="field-label">Date of Birth</span>
+                                <input type="date" class="field-input" id="motherDob">
+                            </div>
+                        </div>
+
+                        <!-- Siblings -->
+                        <div class="form-field">
+                            <span class="field-number">13.</span>
+                            <span class="field-label">Brothers and Sisters (List all):</span>
+                        </div>
+                        <div class="siblings-grid">
+                            <div class="sibling-field">
+                                <span class="sibling-number">1.</span>
+                                <input type="text" class="field-input" id="sibling1">
+                            </div>
+                            <div class="sibling-field">
+                                <span class="sibling-number">2.</span>
+                                <input type="text" class="field-input" id="sibling2">
+                            </div>
+                            <div class="sibling-field">
+                                <span class="sibling-number">3.</span>
+                                <input type="text" class="field-input" id="sibling3">
+                            </div>
+                            <div class="sibling-field">
+                                <span class="sibling-number">4.</span>
+                                <input type="text" class="field-input" id="sibling4">
+                            </div>
+                            <div class="sibling-field">
+                                <span class="sibling-number">5.</span>
+                                <input type="text" class="field-input" id="sibling5">
+                            </div>
+                            <div class="sibling-field">
+                                <span class="sibling-number">6.</span>
+                                <input type="text" class="field-input" id="sibling6">
+                            </div>
+                        </div>
+
+                        <!-- Emergency Contacts -->
+                        <div class="form-field">
+                            <span class="field-number">14.</span>
+                            <span class="field-label">Contact person(s) in case of emergency:</span>
+                        </div>
+                        <div class="emergency-section">
+                            <div class="form-field">
+                                <span class="emergency-label">(e) Name</span>
+                                <input type="text" class="field-input emergency-name" id="emergency1Name" required>
+                                <span class="field-label relationship-label">Relationship</span>
+                                <input type="text" class="field-input emergency-relationship" id="emergency1Relationship" required>
+                            </div>
+                            <div class="form-field indented two-part">
+                                <div class="field-group">
+                                    <span class="field-label">National ID No.:</span>
+                                    <input type="text" class="field-input" id="emergency1Id">
+                                </div>
+                                <div class="field-group">
+                                    <span class="field-label">Phone No.:</span>
+                                    <input type="tel" class="field-input" id="emergency1Phone" required>
+                                </div>
+                            </div>
+                            <div class="form-field indented">
+                                <span class="field-label">Address:</span>
+                                <input type="text" class="field-input" id="emergency1Address">
+                            </div>
+
+                            <div class="form-field">
+                                <span class="emergency-label">(f) Name</span>
+                                <input type="text" class="field-input emergency-name" id="emergency2Name">
+                                <span class="field-label relationship-label">Relationship</span>
+                                <input type="text" class="field-input emergency-relationship" id="emergency2Relationship">
+                            </div>
+                            <div class="form-field indented two-part">
+                                <div class="field-group">
+                                    <span class="field-label">National ID No.:</span>
+                                    <input type="text" class="field-input" id="emergency2Id">
+                                </div>
+                                <div class="field-group">
+                                    <span class="field-label">Phone No.:</span>
+                                    <input type="tel" class="field-input" id="emergency2Phone">
+                                </div>
+                            </div>
+                            <div class="form-field indented">
+                                <span class="field-label">Address:</span>
+                                <input type="text" class="field-input" id="emergency2Address">
+                            </div>
+                        </div>
+
+                        <!-- Educational Background -->
+                        <div class="form-field">
+                            <span class="field-number">15.</span>
+                            <span class="field-label">Name and address of Secondary School attended</span>
+                            <input type="text" class="field-input" id="schoolAttended">
+                        </div>
+                        <div class="form-field indented">
+                            <span class="field-label">Address:</span>
+                            <input type="text" class="field-input" id="schoolAddress">
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">16.</span>
+                            <span class="field-label">K.C.S.E Results (Subjects and Grades) and Year</span>
+                        </div>
+                        <div class="kcse-results">
+                            <input type="text" class="field-input result-line" id="kcseResults" placeholder="List all subjects and grades">
+                            <input type="text" class="field-input result-line" id="kcseResults2" placeholder="Continue subjects and grades">
+                            <div class="form-field">
+                                <span class="field-label">Index Number</span>
+                                <input type="text" class="field-input" id="indexNumber">
+                            </div>
+                            <div class="form-field">
+                                <span class="field-label">KCSE Year</span>
+                                <input type="number" class="field-input" id="kcseYear" min="1990" max="2030" placeholder="e.g., 2023">
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">17.</span>
+                            <span class="field-label">Any other institutions/attended and qualifications attained</span>
+                        </div>
+                        <div class="indented">
+                            <input type="text" class="field-input full-width" id="otherInstitutions">
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">18.</span>
+                            <span class="field-label">Which games/Sports are you interested in?</span>
+                            <input type="text" class="field-input" id="sportsInterests">
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">19.</span>
+                            <span class="field-label">Which clubs/societies/hobbies are you interested in?</span>
+                            <input type="text" class="field-input" id="clubsInterests">
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">20.</span>
+                            <span class="field-label">Do you suffer from any physical impairment? If so give details</span>
+                        </div>
+                        <div class="indented">
+                            <input type="text" class="field-input full-width" id="physicalImpairment">
+                        </div>
+
+                        <div class="form-field">
+                            <span class="field-number">21.</span>
+                            <span class="field-label">Please give any information you think is useful for you to communicate to the University:</span>
+                        </div>
+                        <div class="indented">
+                            <input type="text" class="field-input full-width" id="additionalInfo">
+                        </div>
+
+                        <!-- Certification -->
+                        <div class="certification">
+                            I certify that the information I have provided is correct.
+                        </div>
+
+                        <!-- Signature Section -->
+                        <div class="signature-section">
+                            <div class="signature-field">
+                                <div class="signature-line"></div>
+                                <span class="signature-label">Signature</span>
+                            </div>
+                            <div class="signature-field">
+                                <div class="signature-line"></div>
+                                <span class="signature-label">Date</span>
+                            </div>
+                        </div>
+
+                        <!-- ISO Certification -->
+                        <div class="iso-certification">
+                            <div class="iso-logo">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%232a5298'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-size='12' font-weight='bold'%3EUoE%3C/text%3E%3C/svg%3E" alt="UoE Logo" width="50" height="50">
+                            </div>
+                            <p><strong>University of Eldoret is ISO 9001:2015 Certified</strong></p>
+                            <div class="iso-icon">
+                                <span style="font-size: 24px; color: #ff6b35;">🏆</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Media Release Form -->
+        <div class="form-container" id="media-consent">
+            <div class="container">
+                <!-- Header Section for Media Form -->
+                <div class="header">
+                    <div class="header-content">
+                        <div class="university-logo">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%232a5298'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-size='16' font-weight='bold'%3EUoE%3C/text%3E%3C/svg%3E" alt="UoE Logo" width="100" height="100">
+                        </div>
+                        
+                        <div class="header-center">
+                            <h1>University of Eldoret</h1>
+                            <p class="tagline">Excellence in Innovation and Development</p>
+                        </div>
+                        
+                        <div class="contact-info">
+                            <p><strong>UoE/FM/033</strong></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Media Release Form Content -->
+                <div class="form-content">
+                    <div class="release-form-header">
+                        <div class="form-number-box">
+                            <span class="form-arrow">▶</span>
+                            <span class="form-title-text">RELEASE FORM</span>
+                        </div>
+                    </div>
+
+                    <form id="mediaConsentForm">
+                        <div class="release-content">
+                            <p class="release-paragraph">
+                                I, <span class="fill-field"><input type="text" class="inline-input" id="mediaFullName" readonly></span> of ID No. <span class="fill-field"><input type="text" class="inline-input" id="mediaIdNumber" readonly></span> hereby 
+                                grant consent to the University of <u>Eldoret</u> and its Legal representatives, successors, 
+                                assigns, agents and employees the irrevocable and unrestricted right to use and 
+                                reproduce photographs and or video images taken of me for the purpose of 
+                                publication, promotion advertising or trade, in any manner or medium.
+                            </p>
+
+                            <p class="release-paragraph">
+                                I agree that the photographs/videos shall thereof constitute sole property of the 
+                                University of <u>Eldoret</u> with <u>full right of disposition in any manner whatsoever</u>.
+                            </p>
+
+                            <p class="release-paragraph">
+                                I hereby release the University it's successors and assigns from any claims 
+                                whatsoever in connection with the use, publication of the images/videos thereof.
+                            </p>
+
+                            <div class="signature-section media-signature">
+                                <div class="signature-row">
+                                    <div class="signature-field">
+                                        <span class="signature-label">Date</span>
+                                        <div class="date-line">
+                                            <input type="date" class="signature-date-input" id="mediaDate" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="signature-row">
+                                    <div class="signature-field">
+                                        <span class="signature-label">Signature</span>
+                                        <div class="signature-line physical-signature">
+                                            <span class="signature-note">(Physical signature required when printing)</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="signature-row">
+                                    <div class="signature-field">
+                                        <span class="signature-label">Name</span>
+                                        <div class="name-line">
+                                            <input type="text" class="signature-name-input" id="mediaSignatureName" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions and Actions Section -->
+        <div class="important-instructions">
+            <h3>📋 Important Instructions</h3>
+            <div class="instruction-box">
+                <p><strong>University Requirement:</strong> You must print <span style="background: yellow; font-weight: bold;">FOUR (4) copies</span> of BOTH completed forms for submission.</p>
+                <p><strong>Photo Requirement:</strong> Attach a colored passport-size photograph taken on a yellow background to each of the 4 copies of the Student Personal Details form.</p>
+                <p><strong>Submission:</strong> Submit all 4 copies of both forms to the Registrar Academic office.</p>
+                <p><strong>Both Forms Required:</strong> You cannot submit one form without the other. Both must be completed.</p>
+            </div>
+        </div>
+
+        <!-- Data Protection Consent Section -->
+        <div class="data-protection-section">
+            <h3>🔒 Data Protection Consent</h3>
+            <div class="consent-container">
+                <div class="consent-item">
+                    <input type="checkbox" id="dataConsent" required>
+                    <label for="dataConsent">
+                        I consent to the University of Eldoret collecting, storing, and processing my personal data provided in this admission 
+                        form for the purposes of admission, academic administration, and related services. I understand that my data will be 
+                        kept securely and only used for the stated purposes in compliance with the Data Protection Act, 2019.
+                    </label>
+                </div>
+                <div class="consent-item">
+                    <input type="checkbox" id="dataRights" required>
+                    <label for="dataRights">
+                        I acknowledge that I have the right to access, correct, or request deletion of my personal data, and to withdraw my 
+                        consent at any time by contacting the University through the designated office or email address. *
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="clearAllForms()">Clear All Forms</button>
+            <button type="button" class="btn btn-primary" onclick="validateAndSubmitBothForms()" id="submitBtn" disabled>Submit Both Forms</button>
+            <button type="button" class="btn btn-success" onclick="printBothForms()" id="printBtn" disabled>Print Both Forms (4 copies each)</button>
+            <button type="button" class="btn btn-info" onclick="downloadBothPDFs()" id="downloadBtn" disabled>Download Both PDFs</button>
         </div>
 
         <!-- Success Message -->
-        <div class="success-message" id="successMessage">
-            Form completed successfully! Your data has been submitted.
-        </div>
-
-        <!-- Form Content -->
-        <div class="form-content">
-            <h2 class="form-title">STUDENT'S PERSONAL DETAILS</h2>
-            
-            <div class="instruction-text">
-                Information provided in this Form is intended to help the office of the Registrar 
-                Academic understand the student better. It will be used for purposes of improving 
-                the student's welfare while at the University. (To be completed in quadruple (4 
-                copies) and in capital letters. <strong>Attach a coloured passport size photograph taken on a 
-                yellow background on each form.</strong>
-            </div>
-            
-            <div class="note-text">
-                <strong>Note:</strong> You are required to enter through the link below the same information 
-                filled in hard copy forms. http://support.uoeld.ac.ke/admissions/
-            </div>
-
-            <form id="studentForm">
-                <!-- Personal Details -->
-                <div class="form-field">
-                    <span class="field-number">1.</span>
-                    <span class="field-label">Full Name:</span>
-                    <input type="text" class="field-input name-input" id="fullName" required>
-                    <div class="name-labels">
-                        <span class="sub-label">(Surname or last Name)</span>
-                        <span class="sub-label">(Other Names)</span>
-                    </div>
-                </div>
-
-                <div class="two-column">
-                    <div class="form-field">
-                        <span class="field-number">2.</span>
-                        <span class="field-label">University Admission Number</span>
-                        <input type="text" class="field-input" id="admissionNumber" required>
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">Phone No.</span>
-                        <input type="tel" class="field-input" id="phoneNumber" required>
-                    </div>
-                </div>
-
-                <div class="form-field triple-field">
-                    <span class="field-number">3.</span>
-                    <div class="field-group">
-                        <span class="field-label">National ID No.</span>
-                        <input type="text" class="field-input" id="nationalId" required>
-                    </div>
-                    <div class="field-group">
-                        <span class="field-label">Passport No.</span>
-                        <input type="text" class="field-input" id="passportNo">
-                    </div>
-                    <div class="field-group">
-                        <span class="field-label">or Birth Certificate No. if under 18 years</span>
-                        <input type="text" class="field-input" id="birthCertNo">
-                    </div>
-                </div>
-
-                <div class="form-field triple-field">
-                    <span class="field-number">4.</span>
-                    <div class="field-group">
-                        <span class="field-label">Religion</span>
-                        <input type="text" class="field-input" id="religion">
-                    </div>
-                    <div class="field-group">
-                        <span class="field-label">Nationality</span>
-                        <input type="text" class="field-input" id="nationality" required>
-                    </div>
-                    <div class="field-group">
-                        <span class="field-label">Gender</span>
-                        <select class="field-input" id="gender" required>
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">5.</span>
-                    <span class="field-label">Ethnic Background</span>
-                    <input type="text" class="field-input" id="ethnicBackground">
-                </div>
-
-                <div class="two-column">
-                    <div class="form-field">
-                        <span class="field-number">6.</span>
-                        <span class="field-label">Date of Birth</span>
-                        <input type="date" class="field-input" id="dateOfBirth" required>
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">Place of Birth:</span>
-                        <input type="text" class="field-input" id="placeOfBirth" required>
-                    </div>
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">7.</span>
-                    <span class="field-label">Place of Permanent Residence: Village/Town</span>
-                    <input type="text" class="field-input" id="permanentResidence" required>
-                </div>
-
-                <div class="two-column">
-                    <div class="form-field">
-                        <span class="field-number">8.</span>
-                        <span class="field-label">Location</span>
-                        <input type="text" class="field-input" id="location" required>
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">Name of Chief</span>
-                        <input type="text" class="field-input" id="chiefName">
-                    </div>
-                </div>
-
-                <!-- Enhanced Administrative Location Fields -->
-                <div class="form-field">
-                    <span class="field-number">9.</span>
-                    <span class="field-label">Administrative Location (Select in order):</span>
-                </div>
-                
-                <div class="form-field triple-field" style="margin-left: 25px;">
-                    <div class="field-group location-field-group">
-                        <span class="field-label">County</span>
-                        <select class="location-dropdown" id="county" required>
-                            <option value="">Loading counties...</option>
-                        </select>
-                        <span class="location-help-text">Select your county first</span>
-                    </div>
-                    <div class="field-group location-field-group">
-                        <span class="field-label">Sub County</span>
-                        <select class="location-dropdown" id="subCounty" disabled required>
-                            <option value="">Select county first</option>
-                        </select>
-                        <span class="location-help-text">Will populate after county selection</span>
-                    </div>
-                    <div class="field-group location-field-group">
-                        <span class="field-label">Constituency</span>
-                        <select class="location-dropdown" id="constituency" disabled required>
-                            <option value="">Select sub-county first</option>
-                        </select>
-                        <span class="location-help-text">Will populate after sub-county selection</span>
-                    </div>
-                </div>
-
-                <div class="form-field" style="margin-left: 25px;">
-                    <div class="field-group location-field-group">
-                        <span class="field-label">Ward</span>
-                        <select class="location-dropdown" id="ward" disabled>
-                            <option value="">Select constituency first</option>
-                        </select>
-                        <span class="location-help-text">Will populate after constituency selection</span>
-                    </div>
-                </div>
-
-                <div class="two-column">
-                    <div class="form-field">
-                        <span class="field-number">10.</span>
-                        <span class="field-label">Marital Status</span>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="maritalStatus" value="Single" id="single">
-                                <label for="single">Single</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="maritalStatus" value="Married" id="married">
-                                <label for="married">Married</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="maritalStatus" value="Divorced" id="divorced">
-                                <label for="divorced">Divorced</label>
-                            </div>
-                            <div class="checkbox-item">
-                                <input type="checkbox" name="maritalStatus" value="Widowed" id="widowed">
-                                <label for="widowed">Widowed</label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">11.</span>
-                    <span class="field-label">Division</span>
-                    <input type="text" class="field-input" id="division">
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">12.</span>
-                    <span class="field-label">Name and Address of Spouse (if married)</span>
-                    <input type="text" class="field-input" id="spouseDetails">
-                </div>
-
-                <div class="two-column indented">
-                    <div class="form-field">
-                        <span class="field-label">Occupation of Spouse</span>
-                        <input type="text" class="field-input" id="spouseOccupation">
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">Number of Children:</span>
-                        <input type="number" class="field-input" id="numberOfChildren" min="0">
-                    </div>
-                </div>
-
-                <!-- Father's Information -->
-                <div class="form-field">
-                    <span class="field-number">13.</span>
-                    <span class="field-label">Full Name of Father</span>
-                    <input type="text" class="field-input father-name" id="fatherName">
-                    <div class="status-checkboxes">
-                        <div class="checkbox-item inline">
-                            <input type="checkbox" name="fatherStatus" value="Alive" id="fatherAlive">
-                            <label for="fatherAlive">Alive</label>
-                        </div>
-                        <div class="checkbox-item inline">
-                            <input type="checkbox" name="fatherStatus" value="Deceased" id="fatherDeceased">
-                            <label for="fatherDeceased">Deceased</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-field indented two-part">
-                    <div class="field-group">
-                        <span class="field-label">Phone No.</span>
-                        <input type="tel" class="field-input" id="fatherPhone">
-                    </div>
-                    <div class="field-group">
-                        <span class="field-label">National ID/Passport No.</span>
-                        <input type="text" class="field-input" id="fatherIdNo">
-                    </div>
-                </div>
-
-                <div class="two-column indented">
-                    <div class="form-field">
-                        <span class="field-label">Occupation of Father</span>
-                        <input type="text" class="field-input" id="fatherOccupation">
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">Date of Birth</span>
-                        <input type="date" class="field-input" id="fatherDob">
-                    </div>
-                </div>
-
-                <!-- Mother's Information -->
-                <div class="form-field">
-                    <span class="field-number">14.</span>
-                    <span class="field-label">Full Name of Mother</span>
-                    <input type="text" class="field-input mother-name" id="motherName">
-                    <div class="status-checkboxes">
-                        <div class="checkbox-item inline">
-                            <input type="checkbox" name="motherStatus" value="Alive" id="motherAlive">
-                            <label for="motherAlive">Alive</label>
-                        </div>
-                        <div class="checkbox-item inline">
-                            <input type="checkbox" name="motherStatus" value="Deceased" id="motherDeceased">
-                            <label for="motherDeceased">Deceased</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-field indented two-part">
-                    <div class="field-group">
-                        <span class="field-label">Phone No.</span>
-                        <input type="tel" class="field-input" id="motherPhone">
-                    </div>
-                    <div class="field-group">
-                        <span class="field-label">National ID/Passport No.</span>
-                        <input type="text" class="field-input" id="motherIdNo">
-                    </div>
-                </div>
-
-                <div class="two-column indented">
-                    <div class="form-field">
-                        <span class="field-label">Occupation of Mother</span>
-                        <input type="text" class="field-input" id="motherOccupation">
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">Date of Birth</span>
-                        <input type="date" class="field-input" id="motherDob">
-                    </div>
-                </div>
-
-                <!-- Siblings -->
-                <div class="form-field">
-                    <span class="field-number">15.</span>
-                    <span class="field-label">Brothers and Sisters (List all):</span>
-                </div>
-                
-                <div class="siblings-grid">
-                    <div class="sibling-field">
-                        <span class="sibling-number">1.</span>
-                        <input type="text" class="field-input" id="sibling1" placeholder="Full Name">
-                    </div>
-                    <div class="sibling-field">
-                        <span class="sibling-number">2.</span>
-                        <input type="text" class="field-input" id="sibling2" placeholder="Full Name">
-                    </div>
-                    <div class="sibling-field">
-                        <span class="sibling-number">3.</span>
-                        <input type="text" class="field-input" id="sibling3" placeholder="Full Name">
-                    </div>
-                    <div class="sibling-field">
-                        <span class="sibling-number">4.</span>
-                        <input type="text" class="field-input" id="sibling4" placeholder="Full Name">
-                    </div>
-                    <div class="sibling-field">
-                        <span class="sibling-number">5.</span>
-                        <input type="text" class="field-input" id="sibling5" placeholder="Full Name">
-                    </div>
-                    <div class="sibling-field">
-                        <span class="sibling-number">6.</span>
-                        <input type="text" class="field-input" id="sibling6" placeholder="Full Name">
-                    </div>
-                </div>
-
-                <!-- Emergency Contacts -->
-                <div class="form-field">
-                    <span class="field-number">16.</span>
-                    <span class="field-label">Contact person(s) in case of emergency:</span>
-                </div>
-                
-                <div class="emergency-section">
-                    <div class="form-field">
-                        <span class="emergency-label">(e) Name</span>
-                        <input type="text" class="field-input emergency-name" id="emergency1Name" required>
-                        <span class="field-label relationship-label">Relationship</span>
-                        <input type="text" class="field-input emergency-relationship" id="emergency1Relationship" required>
-                    </div>
-                    <div class="form-field indented two-part">
-                        <div class="field-group">
-                            <span class="field-label">National ID No.:</span>
-                            <input type="text" class="field-input" id="emergency1Id">
-                        </div>
-                        <div class="field-group">
-                            <span class="field-label">Phone No.:</span>
-                            <input type="tel" class="field-input" id="emergency1Phone" required>
-                        </div>
-                    </div>
-                    <div class="form-field indented">
-                        <span class="field-label">Address:</span>
-                        <input type="text" class="field-input" id="emergency1Address">
-                    </div>
-
-                    <div class="form-field">
-                        <span class="emergency-label">(f) Name</span>
-                        <input type="text" class="field-input emergency-name" id="emergency2Name">
-                        <span class="field-label relationship-label">Relationship</span>
-                        <input type="text" class="field-input emergency-relationship" id="emergency2Relationship">
-                    </div>
-                    <div class="form-field indented two-part">
-                        <div class="field-group">
-                            <span class="field-label">National ID No.:</span>
-                            <input type="text" class="field-input" id="emergency2Id">
-                        </div>
-                        <div class="field-group">
-                            <span class="field-label">Phone No.:</span>
-                            <input type="tel" class="field-input" id="emergency2Phone">
-                        </div>
-                    </div>
-                    <div class="form-field indented">
-                        <span class="field-label">Address:</span>
-                        <input type="text" class="field-input" id="emergency2Address">
-                    </div>
-                </div>
-
-                <!-- Educational Background -->
-                <div class="form-field">
-                    <span class="field-number">17.</span>
-                    <span class="field-label">Name and address of Secondary School attended</span>
-                    <input type="text" class="field-input" id="schoolAttended">
-                </div>
-                <div class="form-field indented">
-                    <span class="field-label">Address:</span>
-                    <input type="text" class="field-input" id="schoolAddress">
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">18.</span>
-                    <span class="field-label">K.C.S.E Results (Subjects and Grades) and Year</span>
-                </div>
-                <div class="kcse-results">
-                    <input type="text" class="field-input result-line" id="kcseResults" placeholder="List all subjects and grades">
-                    <input type="text" class="field-input result-line" id="kcseResults2" placeholder="Continue subjects and grades">
-                    <div class="form-field">
-                        <span class="field-label">Index Number</span>
-                        <input type="text" class="field-input" id="indexNumber">
-                    </div>
-                    <div class="form-field">
-                        <span class="field-label">KCSE Year</span>
-                        <input type="number" class="field-input" id="kcseYear" min="1990" max="2030" placeholder="e.g., 2023">
-                    </div>
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">19.</span>
-                    <span class="field-label">Any other institutions/attended and qualifications attained</span>
-                </div>
-                <div class="indented">
-                    <input type="text" class="field-input full-width" id="otherInstitutions">
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">20.</span>
-                    <span class="field-label">Which games/Sports are you interested in?</span>
-                    <input type="text" class="field-input" id="sportsInterests">
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">21.</span>
-                    <span class="field-label">Which clubs/societies/hobbies are you interested in?</span>
-                    <input type="text" class="field-input" id="clubsInterests">
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">22.</span>
-                    <span class="field-label">Do you suffer from any physical impairment? If so give details</span>
-                </div>
-                <div class="indented">
-                    <input type="text" class="field-input full-width" id="physicalImpairment">
-                </div>
-
-                <div class="form-field">
-                    <span class="field-number">23.</span>
-                    <span class="field-label">Please give any information you think is useful for you to communicate to the University:</span>
-                </div>
-                <div class="indented">
-                    <input type="text" class="field-input full-width" id="additionalInfo">
-                </div>
-
-                <!-- Certification -->
-                <div class="certification">
-                    I certify that the information I have provided is correct.
-                </div>
-                
-                <div class="signature-section">
-                    <div class="signature-field">
-                        <span>Signature</span>
-                        <div class="signature-line"></div>
-                    </div>
-                    <div class="signature-field">
-                        <span>Date</span>
-                        <div class="signature-line"></div>
-                    </div>
-                </div>
-            </form>
-
-            <!-- ISO Certification with Logo -->
-            <div class="footer-section">
-                <div class="university-footer-logo">
-                    <img src="logo.png" alt="University of Eldoret Logo" id="footerLogo" onerror="handleFooterLogoError()">
-                </div>
-                <div class="iso-certification">
-                    <strong>University of Eldoret is ISO 9001:2015 Certified</strong>
-                    <div class="iso-logo">🏆</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pre-Submission Section (Web Only - Not Printed) -->
-        <div class="pre-submission-section">
-            <!-- Printing Instructions -->
-            <div class="printing-instructions">
-                <h3>📋 Important Instructions</h3>
-                <div class="instruction-box">
-                    <p><strong>University Requirement:</strong> You must print <span class="highlight">FOUR (4) copies</span> of this completed form for submission.</p>
-                    <p><strong>Photo Requirement:</strong> Attach a colored passport-size photograph taken on a yellow background to each of the 4 copies.</p>
-                    <p><strong>Submission:</strong> Submit all 4 copies with photos attached to the Registrar Academic office.</p>
-                </div>
-            </div>
-
-            <!-- Data Protection Consent -->
-            <div class="data-protection-section">
-                <h3>🔒 Data Protection Consent</h3>
-                <div class="data-protection-notice">
-                    <div class="consent-checkbox">
-                        <input type="checkbox" id="dataConsent" required>
-                        <label for="dataConsent">
-                            <strong>I consent to the University of Eldoret collecting, storing, and processing my personal data provided in this admission form for the purposes of admission, academic administration, and related services. I understand that my data will be kept securely and only used for the stated purposes in compliance with the Data Protection Act, 2019.</strong>
-                        </label>
-                    </div>
-                    <div class="consent-checkbox" style="margin-top: 15px;">
-                        <input type="checkbox" id="dataRights" required>
-                        <label for="dataRights">
-                            <strong>I acknowledge that I have the right to access, correct, or request deletion of my personal data, and to withdraw my consent at any time by contacting the University through the designated office or email address.</strong> <span class="required">*</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Actions (Web Only) - Updated with Submit Button -->
-        <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
-            <button type="button" class="btn" onclick="submitForm()" style="background: linear-gradient(135deg, #28a745 0%, #20a039 100%);">Submit Form</button>
-            <button type="button" class="btn" onclick="downloadPDF()">Download PDF</button>
-            <button type="button" class="btn" onclick="printForm()">Print Form</button>
-        </div>
+        <div class="success-message" id="successMessage"></div>
     </div>
 
-    <!-- ========================================
-         MODULAR JAVASCRIPT LOADING SEQUENCE
-         ======================================== -->
-    
-    <!-- JSON Loading Status Logging -->
-    <script>
-        console.log('🚀 Starting University of Eldoret Student Form Application');
-        console.log('📦 Loading modular JavaScript architecture...');
-        
-        // JSON Loading Status Tracker
-        window.UoEForm = window.UoEForm || {};
-        window.UoEForm.loadingStatus = {
-            locationJSON: {
-                attempted: false,
-                loaded: false,
-                error: null,
-                timestamp: null
-            },
-            modules: {
-                locationManager: false,
-                mainApp: false,
-                legacyScript: false
-            }
-        };
-        
-        // JSON Status Tracker with PHPMyAdmin Support
-        window.UoEForm.logJSONStatus = function(status, error = null) {
-            const timestamp = new Date().toISOString();
-            window.UoEForm.loadingStatus.locationJSON = {
-                attempted: true,
-                loaded: status === 'success',
-                error: error,
-                timestamp: timestamp
-            };
-            
-            if (status === 'success') {
-                console.log('✅ JSON Location Data loaded successfully at', timestamp);
-            } else if (status === 'error') {
-                console.error('❌ JSON Location Data failed to load at', timestamp, 'Error:', error);
-            } else if (status === 'fallback') {
-                console.warn('⚠️ Using fallback location data at', timestamp);
-            } else if (status === 'attempting') {
-                console.log('🔄 Attempting to load JSON Location Data at', timestamp);
-            }
-            
-            // Also log to console for easy debugging
-            console.log('📊 JSON Loading Status:', window.UoEForm.loadingStatus.locationJSON);
-        };
-        
-        // PHPMyAdmin JSON Format Handler
-        window.UoEForm.handlePHPMyAdminJSON = function(rawData) {
-            console.log('🔄 Processing PHPMyAdmin JSON format...');
-            
-            if (!Array.isArray(rawData)) {
-                console.log('📊 Standard JSON object format detected');
-                return rawData;
-            }
-            
-            console.log('📊 PHPMyAdmin array format detected, extracting tables...');
-            
-            // Find tables in PHPMyAdmin export format
-            const tables = rawData.filter(item => item.type === 'table' && item.data);
-            console.log('📊 Found tables:', tables.map(t => `${t.name} (${t.data.length} records)`));
-            
-            // Convert to expected format for location manager
-            const result = {
-                counties: [],
-                subcounties: [],
-                station: []
-            };
-            
-            tables.forEach(table => {
-                if (table.name === 'counties') {
-                    // Convert county data to expected format
-                    result.counties = table.data.map(county => ({
-                        county_id: county.county_id,
-                        county_name: county.county_name
-                    }));
-                } else if (table.name === 'subcounties') {
-                    result.subcounties = table.data;
-                } else if (table.name === 'station') {
-                    result.station = table.data;
-                }
-            });
-            
-            console.log('✅ PHPMyAdmin JSON converted to standard format');
-            console.log('📊 Converted data:');
-            console.log('  - Counties:', result.counties.length);
-            console.log('  - Subcounties:', result.subcounties.length);
-            console.log('  - Stations:', result.station.length);
-            
-            return result;
-        };
-        
-        // Module Loading Logger
-        window.UoEForm.logModuleStatus = function(moduleName, status) {
-            window.UoEForm.loadingStatus.modules[moduleName] = status;
-            const timestamp = new Date().toISOString();
-            
-            if (status) {
-                console.log(`✅ ${moduleName} module loaded successfully at`, timestamp);
-            } else {
-                console.error(`❌ ${moduleName} module failed to load at`, timestamp);
-            }
-            
-            console.log('📊 Module Loading Status:', window.UoEForm.loadingStatus.modules);
-        };
-        
-        // Global Status Check Function
-        window.UoEFormLoadingStatus = function() {
-            return window.UoEForm.loadingStatus;
-        };
-    </script>
-    
-    <!-- PHASE 1: Location Management Module -->
-    <script src="location-manager.js?v=2.5" onload="window.UoEForm.logModuleStatus('locationManager', true)" onerror="window.UoEForm.logModuleStatus('locationManager', false)"></script>
-    
-    <!-- PHASE 2: Form Validation Module (when extracted) -->
-    <!-- <script src="form-validator.js?v=2.5" onload="window.UoEForm.logModuleStatus('formValidator', true)" onerror="window.UoEForm.logModuleStatus('formValidator', false)"></script> -->
-    
-    <!-- PHASE 3: Form Utilities Module (when extracted) -->
-    <!-- <script src="form-utilities.js?v=2.5" onload="window.UoEForm.logModuleStatus('formUtilities', true)" onerror="window.UoEForm.logModuleStatus('formUtilities', false)"></script> -->
-    
-    <!-- PHASE 4: PDF Generation Module (when extracted) -->
-    <!-- <script src="pdf-generator.js?v=2.5" onload="window.UoEForm.logModuleStatus('pdfGenerator', true)" onerror="window.UoEForm.logModuleStatus('pdfGenerator', false)"></script> -->
-    
-    <!-- PHASE 5: Firebase Integration Module (when extracted) -->
-    <!-- <script src="firebase-integration.js?v=2.5" onload="window.UoEForm.logModuleStatus('firebaseIntegration', true)" onerror="window.UoEForm.logModuleStatus('firebaseIntegration', false)"></script> -->
-    
-    <!-- PHASE 6: Main Application Controller -->
-    <script src="main.js?v=2.5" onload="window.UoEForm.logModuleStatus('mainApp', true)" onerror="window.UoEForm.logModuleStatus('mainApp', false)"></script>
-    
-    <!-- PHASE 7: Legacy Support (Temporary - will be removed after modularization) -->
-    <script src="script.js?v=2.5" onload="window.UoEForm.logModuleStatus('legacyScript', true)" onerror="window.UoEForm.logModuleStatus('legacyScript', false)"></script>
-    
-    <!-- Enhanced Script with Cascading Dropdowns (for compatibility) -->
-    <script src="enhanced_script_with_locations.js?v=2.5" onload="console.log('🔄 Enhanced location script loaded')" onerror="console.warn('⚠️ Enhanced location script not found - using modular system')"></script>
-    
-    <!-- ========================================
-         APPLICATION INITIALIZATION MONITORING
-         ======================================== -->
-    
-    <script>
-        // Wait for all modules to load and initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('📋 DOM Ready - Initializing modular application...');
-            
-            // Check system status after modules load
-            setTimeout(() => {
-                console.log('🔍 Final System Check...');
-                
-                // Check if main application is available
-                if (typeof window.UoEFormStatus === 'function') {
-                    const status = window.UoEFormStatus();
-                    console.log('📊 Application Status:', status);
-                    
-                    if (status.initialized) {
-                        console.log('✅ Modular application initialized successfully');
-                    } else {
-                        console.warn('⚠️ Modular application initialization incomplete');
-                    }
-                } else {
-                    console.log('📋 Using legacy script.js initialization');
-                }
-                
-                // Log final loading status
-                console.log('📊 Final Loading Status:', window.UoEFormLoadingStatus());
-                
-                // Check JSON loading specifically
-                const jsonStatus = window.UoEForm.loadingStatus.locationJSON;
-                if (jsonStatus.attempted) {
-                    if (jsonStatus.loaded) {
-                        console.log('✅ JSON location data successfully integrated');
-                    } else {
-                        console.warn('⚠️ JSON location data failed - check kenyan_locations.json file');
-                        console.log('💡 Make sure kenyan_locations.json is in the same directory as index.html');
-                    }
-                } else {
-                    console.log('⏳ JSON location data loading not yet attempted');
-                }
-                
-            }, 2000);
-        });
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingText">Processing...</div>
+    </div>
 
-        // Enhanced JSON Loading Monitor
-        function monitorJSONLoading() {
-            // Monitor both location-manager.js and script.js approaches
-            
-            // Option 1: Monitor modular location manager
-            if (window.UoEForm && window.UoEForm.LocationManager) {
-                const originalLoadLocationData = window.UoEForm.LocationManager.loadLocationData;
-                if (originalLoadLocationData) {
-                    window.UoEForm.LocationManager.loadLocationData = async function() {
-                        console.log('🗺️ Modular Location Manager attempting to load JSON data...');
-                        window.UoEForm.logJSONStatus('attempting');
-                        try {
-                            const result = await originalLoadLocationData.call(this);
-                            if (result) {
-                                window.UoEForm.logJSONStatus('success');
-                                console.log('✅ Location data processed successfully');
-                                console.log('📊 Counties loaded:', Object.keys(this.data?.counties || {}).length);
-                                console.log('📊 Subcounties loaded:', Object.keys(this.data?.subcounties || {}).length);
-                            } else {
-                                window.UoEForm.logJSONStatus('fallback');
-                                console.log('⚠️ Using fallback counties');
-                            }
-                            return result;
-                        } catch (error) {
-                            window.UoEForm.logJSONStatus('error', error.message);
-                            console.error('❌ Location loading error:', error);
-                            throw error;
-                        }
-                    };
-                }
-            }
-            
-            // Option 2: Monitor legacy script.js function
-            if (typeof window.loadKenyanLocationData === 'function') {
-                const originalLoadKenyanLocationData = window.loadKenyanLocationData;
-                window.loadKenyanLocationData = async function() {
-                    console.log('🗺️ Legacy Script attempting to load JSON data...');
-                    window.UoEForm.logJSONStatus('attempting');
-                    try {
-                        const result = await originalLoadKenyanLocationData.call(this);
-                        window.UoEForm.logJSONStatus('success');
-                        return result;
-                    } catch (error) {
-                        window.UoEForm.logJSONStatus('error', error.message);
-                        throw error;
-                    }
-                };
-            }
-        }
-
-        // Force Location Manager Initialization with URL Fix
-        function forceLocationManagerInit() {
-            if (window.UoEForm && window.UoEForm.LocationManager) {
-                console.log('🔄 Force-initializing Location Manager...');
-                
-                // Fix the URL issue before attempting reload
-                if (!window.UoEForm.config) {
-                    window.UoEForm.config = {};
-                }
-                if (!window.UoEForm.config.locationDataUrl) {
-                    window.UoEForm.config.locationDataUrl = './kenyan_locations.json'; // lowercase 'u'
-                    console.log('🔧 Fixed location data URL:', window.UoEForm.config.locationDataUrl);
-                }
-                if (!window.UoEForm.config.locationDataURL) {
-                    window.UoEForm.config.locationDataURL = './kenyan_locations.json'; // uppercase 'URL'
-                }
-                
-                // Reset state
-                window.UoEForm.LocationManager.isLoaded = false;
-                window.UoEForm.LocationManager.data = null;
-                
-                // Force reload
-                window.UoEForm.LocationManager.loadLocationData()
-                    .then(result => {
-                        if (result) {
-                            console.log('✅ Force initialization successful!');
-                            console.log('📊 Data loaded - Counties:', Object.keys(window.UoEForm.LocationManager.data?.counties || {}).length);
-                            
-                            // Update dropdown immediately
-                            const countySelect = document.getElementById('county');
-                            if (countySelect && countySelect.innerHTML.includes('data-fallback')) {
-                                console.log('🔄 Refreshing county dropdown...');
-                                window.UoEForm.LocationManager.initializeCountyDropdown();
-                            }
-                        } else {
-                            console.log('⚠️ Force initialization used fallback');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Force initialization failed:', error);
-                    });
-            }
-        }
-
-        // Monitor JSON loading after all modules load
-        setTimeout(monitorJSONLoading, 1000);
-        
-        // Force location manager initialization after page load
-        setTimeout(forceLocationManagerInit, 3000);
-        
-        // Additional monitoring for script.js
-        setTimeout(() => {
-            // Check if the legacy script is being used
-            if (typeof window.loadKenyanLocationData === 'function' && !window.UoEForm.loadingStatus.locationJSON.attempted) {
-                console.log('🔄 Checking for legacy script.js JSON loading...');
-                monitorJSONLoading();
-            }
-        }, 2000);
-
-        // Global error handling
-        window.addEventListener('error', function(e) {
-            console.error('🔥 Application Error:', e.error);
-            
-            // Check if it's a JSON loading error
-            if (e.error && e.error.message && e.error.message.includes('kenyan_locations.json')) {
-                window.UoEForm.logJSONStatus('error', e.error.message);
-            }
-        });
-
-        // Network monitoring for JSON loading
-        window.addEventListener('online', () => {
-            console.log('🌐 Network connection restored - retrying JSON load if needed');
-        });
-
-        window.addEventListener('offline', () => {
-            console.warn('📵 Network connection lost - JSON loading may fail');
-        });
-    </script>
-
-    <!-- ========================================
-         DEVELOPMENT AND DEBUGGING TOOLS
-         ======================================== -->
-    
-    <script>
-        // Development tools
-        console.log('🔧 Development Tools Available:');
-        console.log('   - UoEFormStatus() - Check application status');
-        console.log('   - UoEFormDiagnose() - Run diagnostic tests (when available)');
-        console.log('   - UoEFormLoadingStatus() - Check loading status');
-        console.log('   - UoEFormModules() - List loaded modules (when available)');
-        console.log('   - checkJSONStatus() - Check JSON loading status');
-        console.log('   - debugLocationLoading() - Comprehensive location debug');
-        console.log('   - checkModuleStatus() - Check module loading status');
-        
-        // Comprehensive Debug Function
-        window.debugLocationLoading = function() {
-            console.log('🔍 === LOCATION LOADING DEBUG REPORT ===');
-            
-            // Check if kenyan_locations.json file exists
-            console.log('📁 Checking kenyan_locations.json file...');
-            fetch('./kenyan_locations.json')
-                .then(response => {
-                    if (response.ok) {
-                        console.log('✅ kenyan_locations.json file exists and is accessible');
-                        return response.json();
-                    } else {
-                        console.error('❌ kenyan_locations.json file not found or not accessible');
-                        console.log('💡 Make sure kenyan_locations.json is in the same directory as index.html');
-                        return null;
-                    }
-                })
-                .then(data => {
-                    if (data) {
-                        console.log('📊 JSON file structure:', Object.keys(data));
-                        if (data.tables) {
-                            console.log('📊 Tables found:', data.tables.map(t => t.name));
-                        }
-                        if (data.counties) {
-                            console.log('📊 Direct counties found:', Array.isArray(data.counties) ? data.counties.length : Object.keys(data.counties).length);
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Error accessing kenyan_locations.json:', error);
-                    console.log('💡 Possible issues:');
-                    console.log('   - File does not exist in the root directory');
-                    console.log('   - File permissions issue');
-                    console.log('   - Server configuration blocking JSON files');
-                    console.log('   - CORS issues (if testing locally)');
-                });
-            
-            // Check module status
-            console.log('📦 Module Status:');
-            console.log('   - Location Manager loaded:', !!(window.UoEForm && window.UoEForm.LocationManager));
-            console.log('   - Legacy loadKenyanLocationData:', typeof window.loadKenyanLocationData);
-            console.log('   - Main App loaded:', !!(window.UoEForm && window.UoEForm.App));
-            
-            // Check current status
-            const status = window.UoEFormLoadingStatus();
-            console.log('📊 Current Loading Status:', status);
-            
-            // Check county dropdown
-            const countySelect = document.getElementById('county');
-            if (countySelect) {
-                console.log('🏛️ County Dropdown Status:');
-                console.log('   - Options count:', countySelect.options.length);
-                console.log('   - Loading class:', countySelect.classList.contains('loading-dropdown'));
-                console.log('   - Current HTML:', countySelect.innerHTML.substring(0, 100) + '...');
-            }
-            
-            console.log('🔍 === END DEBUG REPORT ===');
-        };
-        
-        // JSON Status Checker (Enhanced)
-        window.checkJSONStatus = function() {
-            const status = window.UoEFormLoadingStatus();
-            console.log('📊 Current JSON Loading Status:', status.locationJSON);
-            
-            if (status.locationJSON.loaded) {
-                console.log('✅ JSON data is loaded and ready');
-                if (window.UoEForm && window.UoEForm.LocationManager && window.UoEForm.LocationManager.data) {
-                    console.log('📊 Available counties:', Object.keys(window.UoEForm.LocationManager.data.counties || {}).length);
-                    console.log('📊 Available subcounties:', Object.keys(window.UoEForm.LocationManager.data.subcounties || {}).length);
-                }
-            } else if (status.locationJSON.attempted) {
-                console.warn('❌ JSON data failed to load:', status.locationJSON.error);
-                console.log('💡 Run debugLocationLoading() for detailed diagnosis');
-            } else {
-                console.log('⏳ JSON loading not yet attempted');
-                console.log('💡 Possible reasons:');
-                console.log('   - Modules still loading');
-                console.log('   - Location manager not initialized yet');
-                console.log('   - Check if location-manager.js loaded properly');
-                console.log('💡 Run debugLocationLoading() for detailed diagnosis');
-            }
-            
-            return status;
-        };
-        
-        // Module Status Checker
-        window.checkModuleStatus = function() {
-            const status = window.UoEFormLoadingStatus();
-            console.log('📊 Module Loading Status:', status.modules);
-            
-            Object.entries(status.modules).forEach(([module, loaded]) => {
-                if (loaded) {
-                    console.log(`✅ ${module}: Loaded`);
-                } else {
-                    console.log(`❌ ${module}: Not loaded`);
-                }
-            });
-            
-            return status.modules;
-        };
-    </script>
-    
-    <!-- Logo Error Handlers (Original) -->
-    <script>
-        function handleLogoError() {
-            const logo = document.getElementById('universityLogo');
-            logo.style.display = 'none';
-            logo.parentElement.innerHTML = '<div style="width: 80px; height: 80px; border: 2px solid #8B4513; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #8B4513; font-weight: bold;">UoE<br>LOGO</div>';
-        }
-        
-        function handleFooterLogoError() {
-            const footerLogo = document.getElementById('footerLogo');
-            if (footerLogo) {
-                footerLogo.style.display = 'none';
-                footerLogo.parentElement.innerHTML = '<div style="width: 60px; height: 60px; border: 2px solid #8B4513; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #8B4513; font-weight: bold; border-radius: 50%; background: #f9f9f9;">UoE<br>LOGO</div>';
-            }
-        }
-    </script>
-
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="location-manager.js"></script>
+    <script src="form-validation.js"></script>
+    <script src="firebase-integration.js"></script>
+    <script src="pdf-generator.js"></script>
+    <script src="form-utilities.js"></script>
+    <script src="dual-form-manager.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
